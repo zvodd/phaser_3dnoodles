@@ -1,6 +1,7 @@
 /// <reference types="./phaser.d.ts" />
 
-import { AUTO, Game, Scale, Types } from "phaser";
+import { enable3d, Canvas } from '@enable3d/phaser-extension'
+import { WEBGL, Game, Scale, Types } from "phaser";
 
 import {
   Boot,
@@ -11,7 +12,7 @@ import {
 } from "./scenes/index.ts";
 
 const gameConfig: Types.Core.GameConfig = {
-  type: AUTO,
+  type: WEBGL,
   width: 1024,
   height: 768,
   parent: "game-container", // The ID of the DOM element to which the game canvas will be appended
@@ -29,4 +30,4 @@ const gameConfig: Types.Core.GameConfig = {
   ],
 };
 
-export default new Game(gameConfig);
+export default enable3d(() => new Game(gameConfig)).withPhysics('assets/ammo')
