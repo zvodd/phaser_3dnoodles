@@ -156,7 +156,7 @@ export default class PlayerController {
     // --- Calculate Velocity ---
     const speed = this.moveSpeed;
     const velocityX = this.moveDirection.x * speed;
-    const velocityZ = this.moveDirection.z * speed;
+    const velocityZ = -this.moveDirection.z * speed;
 
     // Preserve Y velocity for gravity/jumping
     this.player.body.setVelocity(velocityX, this.player.body.velocity.y, velocityZ);
@@ -164,13 +164,17 @@ export default class PlayerController {
     // --- Handle Rotation ---
     if (this.moveDirection.lengthSq() > 0.01) { // If there is movement input
         // Calculate the target angle based on the world-space move direction
-        const targetAngle = Math.atan2(this.moveDirection.x, this.moveDirection.z);
+        const targetAngle = Math.atan2(this.moveDirection.x, -this.moveDirection.z);
 
         // Directly set rotation - can be smoothed later if desired
-        this.player.rotation.y = targetAngle;
+        this.player.children[0].rotation.y = targetAngle;
+        
+        //this.player.body.setRotation(0.0, targetAngle, 0.0);
+        // debugger
 
         // Lock angular velocity to prevent physics wobble
         this.player.body.setAngularVelocityY(0);
+
     } else {
          // If no input, lock angular velocity
          this.player.body.setAngularVelocityY(0);

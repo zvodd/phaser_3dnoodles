@@ -33,18 +33,15 @@ export default class MainScene extends Scene3D {
   create() {
     // Initialize the 3D environment with basic components
     this.third.warpSpeed('camera', 'sky', 'grid', 'light'); // Removed ground as platform serves as main surface
-    this.third.physics.debug.enable()
-    
+    // this.third.physics.debug.enable()
+
     // Adjust default light
     this.third.lights.directionalLight({ intensity: 0.8 });
     this.third.lights.hemisphereLight({ intensity: 0.6 });
 
     // **Setup Fixed Camera**
     this.third.camera.position.set( 0, 18, 20 ); // Position the camera higher and back
-    this.third.camera.quaternion.setFromAxisAngle(new Vector3( -1, 0, 0 ), 0.5 )
-    //this.cameras.main.lookAt(0, 5, 0);      // Make it look at the center of the platform
-
-    // debugger;
+    this.third.camera.quaternion.setFromAxisAngle(new Vector3( -1, 0, 0 ), 0.5 ) // Make it look at the center of the platform
 
     // **Create the Platform**
     this.platform = this.third.add.box({ name: 'platform', width: 1, height: 1, depth: 1 }, { lambert: { color: 'gray' } });
@@ -161,9 +158,9 @@ export default class MainScene extends Scene3D {
 
     // Collision between sphere and platform (just let physics handle it)
     // No specific callback needed here unless you want bounce sounds etc.
-    this.third.physics.add.collider(sphere, this.platform, (objA, objB, event) => {
-         // console.log("Sphere hit platform");
-    });
+    // this.third.physics.add.collider(sphere, this.platform, (objA, objB, event) => {
+    //      // console.log("Sphere hit platform");
+    // });
 
     // Collision between sphere and player (handled by grab logic now)
     // Remove the old pickup logic based on collision
