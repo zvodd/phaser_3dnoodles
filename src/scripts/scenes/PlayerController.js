@@ -98,7 +98,7 @@ export default class PlayerController {
 
     const playerPos = this.player.position;
     const playerForward = new THREE.Vector3();
-    this.player.getWorldDirection(playerForward); // Gets the Z-axis direction in world space
+    this.player.children[0].getWorldDirection(playerForward); // Gets the Z-axis direction in world space
 
     const grabRange = 1.5; // How close the player needs to be
     const grabAngleCosine = Math.cos(THREE.MathUtils.degToRad(45)); // Angle range (90 degrees total cone)

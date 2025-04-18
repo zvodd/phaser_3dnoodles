@@ -28,12 +28,14 @@ export default class MainScene extends Scene3D {
     this.player = null; // Reference to the player object
     this.playerController = null; // Reference to the player controller instance
     this.joystick = null; // Reference to joystick if used
+    this.spheresToSpawnNextFrame = 0;
   }
 
   create() {
     // Initialize the 3D environment with basic components
     this.third.warpSpeed('camera', 'sky', 'grid', 'light'); // Removed ground as platform serves as main surface
-    // this.third.physics.debug.enable()
+    
+    this.third.physics.debug.enable()
 
     // Adjust default light
     this.third.lights.directionalLight({ intensity: 0.8 });
@@ -119,10 +121,11 @@ export default class MainScene extends Scene3D {
     // **Spawn Spheres Periodically**
     this.time.addEvent({
       delay: 2000, // Every 2 seconds
-      callback: this.spawnSphere,
+      callback: ()=>{ this.spheresToSpawnNextFrame += 1},
       callbackScope: this,
       loop: true
     });
+
   }
 
   /**
@@ -211,13 +214,17 @@ export default class MainScene extends Scene3D {
         // Apply rotation smoothly using quaternions might be better, but direct rotation is simpler for now
         // Ensure we are setting rotation on the THREE.Object3D, not the physics body directly
         this.platform.rotation.set(tiltX, 0, tiltZ);
-
+        // debugger
         // Update the kinematic platform's physics body transform
         // Note: Directly setting rotation might fight with physics updates for kinematic bodies.
         // A potentially more stable way is to set the physics body's transform.
         // However, Enable3D often handles syncing THREE object transform TO kinematic body state.
         // If tilting becomes unstable, investigate setting body.setWorldTransform directly.
         // this.platform.body.needUpdate = true; // May be needed if direct rotation doesn't sync
+    }
+    if (this.spheresToSpawnNextFrame > 0 ){
+      this.spheresToSpawnNextFrame--;
+      this.spawnSphere();
     }
 
     // **Handle Spheres Rolling Off (Optional Cleanup)**
