@@ -203,15 +203,25 @@ export default class MainScene extends Scene3D {
         this.man.body.setAngularVelocityY(rotationSpeed)
       }
 
-      if (this.keys.w.isDown || this.move) {
-        if (this.man.anims.current === 'idle' && !this.isJumping) this.man.anims.play('run')
-        const x = Math.sin(theta) * speed
-        const y = this.man.body.velocity.y
-        const z = Math.cos(theta) * speed
-        this.man.body.setVelocity(x, y, z)
+      const input_axis_v = (this.keys.w.isDown ? 1 : 0) + (this.keys.s.isDown ? -1 : 0);
+      const input_axis_h = (this.keys.a.isDown ? -1 : 0) + (this.keys.d.isDown ? 1 : 0);
+
+      // Check if there's any movement input
+      const isMoving = input_axis_v !== 0 || input_axis_h !== 0;
+
+      // Handle animations based on movement
+      if (isMoving && !this.isJumping) {
+        if (this.man.anims.current === 'idle') this.man.anims.play('run');
       } else if (this.man.anims.current === 'run' && !this.isJumping) {
-        this.man.anims.play('idle')
+        this.man.anims.play('idle');
       }
+
+      // Calculate world-space velocity in XZ plane
+      const velocity_x = speed * (-Math.cos(theta) * input_axis_h + Math.sin(theta) * input_axis_v);
+      const velocity_z = speed * (Math.sin(theta) * input_axis_h + Math.cos(theta) * input_axis_v);
+
+      // Set velocity, preserving Y component
+      this.man.body.setVelocity(velocity_x, this.man.body.velocity.y, velocity_z);
 
       if (this.keys.space.isDown && this.canJump) this.jump()
 
