@@ -38,7 +38,7 @@ export default class MainScene extends Scene3D {
     this.third.warpSpeed('camera', 'sky', 'grid', 'ground', 'light')
 
     // **Create the Platform**
-    this.platform = this.third.add.box({ width: 10, height: 0.5, depth: 10 }, { lambert: { color: 'gray' } })
+    this.platform = this.third.add.box({ name: 'platform', width: 10, height: 0.5, depth: 10 }, { lambert: { color: 'gray' } })
     this.platform.position.set(0, 5, 0) // Positioned above the ground at y=5
     this.third.physics.add.existing(this.platform, { shape: 'hacd', mass: 0, collisionFlags: 2 }) // Kinematic body
 
@@ -85,6 +85,7 @@ export default class MainScene extends Scene3D {
       w: this.input.keyboard.addKey('w'),
       d: this.input.keyboard.addKey('d'),
       s: this.input.keyboard.addKey('s'),
+      shift: this.input.keyboard.addKey(16),
       space: this.input.keyboard.addKey(32)
     }
 
@@ -139,15 +140,21 @@ export default class MainScene extends Scene3D {
     this.spheres.push(sphere)
 
     // Collision with player to pick up sphere
-    this.third.physics.add.collider(this.platform, sphere, () => {
-      //this.pickUpSphere(sphere)
+    this.third.physics.add.collider(this.platform, sphere, () => {})
+    sphere.body.on.collision((otherObject, event) => {
+      if (otherObject.name === 'man'){
+        this.pickUpSphere(sphere)
+        console.log(`sphere and ${otherObject.name}: ${event}`)
+      }
     })
+          
   }
 
   /**
    * Pick Up a Sphere
    */
   pickUpSphere(sphere) {
+    if (!this.keys.shift.isDown) return
     this.third.scene.remove(sphere)
     this.third.physics.destroy(sphere)
     const index = this.spheres.indexOf(sphere)
