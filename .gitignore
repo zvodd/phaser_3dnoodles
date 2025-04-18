@@ -10,4 +10,4 @@ _fresh/
 # npm dependencies
 node_modules/
 
-/static/game.js
+static/game.js
