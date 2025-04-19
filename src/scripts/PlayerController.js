@@ -69,7 +69,7 @@ export default class PlayerController {
 
     // Simple ground check (replace with raycast later if needed for slopes/uneven ground)
     // Check if vertical velocity is near zero, indicating potential ground contact
-    if (Math.abs(this.player.body.velocity.y) < 0.1) {
+    if (Math.abs(this.player.body.velocity.y) < 0.4) {
         this.canJump = false;
         this.isJumping = true;
         this.player.anims?.play('jump_running', 50, false); // Play jump anim once
