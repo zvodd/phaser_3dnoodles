@@ -23,7 +23,6 @@ export default class MainScene extends Scene3D {
     this.player = null; // Reference to the player object
     this.playerController = null; // Reference to the player controller instance
     this.joystick = null; // Reference to joystick if used
-    this.spheresToSpawnNextFrame = 0;
   }
 
   create() {
@@ -64,14 +63,14 @@ export default class MainScene extends Scene3D {
     this.platform = this.third.add.box({ name: 'platform', width: 10, height: 0.5, depth: 10 }, { lambert: { color: 'gray' } });
     this.platform.position.set(0, 5, 0); // Positioned at y=5
     this.platform.receiveShadow = true;
-    this.third.physics.add.existing(this.platform, { shape: 'box', mass: 0, width: 10, height: 0.5, depth: 10, collisionFlags: 2, collisionMask: -1, collisionGroup: 1 }); // Kinematic body
+    this.third.physics.add.existing(this.platform, { shape: 'box', mass: 0, width: 10, height: 0.5, depth: 10, collisionFlags: 2, collisionMask: -1, collisionGroup: 2 }); // Kinematic body
 
     CreatePlayer(this);
 
     // **Spawn Spheres Periodically**
     this.time.addEvent({
       delay: 2000, // Every 2 seconds
-      callback: ()=>{ this.spheresToSpawnNextFrame += 1},
+      callback: this.spawnSphere,
       callbackScope: this,
       loop: true
     });
@@ -141,8 +140,7 @@ export default class MainScene extends Scene3D {
 
      // For now, just destroy it as a placeholder:
    console.log(`Grabbing and removing ${sphere.name}`);
-     this.third.physics.destroy(sphere); // Remove physics body
-     this.third.scene.remove(sphere); // Remove from three.js scene
+     this.third.destroy(sphere)
      const index = this.spheres.findIndex(s => s === sphere);
      if (index > -1) this.spheres.splice(index, 1);
    }
@@ -164,7 +162,10 @@ export default class MainScene extends Scene3D {
         // Apply rotation smoothly using quaternions might be better, but direct rotation is simpler for now
         // Ensure we are setting rotation on the THREE.Object3D, not the physics body directly
         this.platform.rotation.set(tiltX, 0, tiltZ);
-        // debugger
+        //this.platform.body.setRotation(tiltX, 0, tiltZ);
+        
+        //this.platform.body.quaternion = (new Quaternion).setFromAxisAngle(new Vector3( 1, 0, 0 ), tiltX ).multiply((new Quaternion).setFromAxisAngle(new Vector3( 0, 0, 1 ), tiltZ ))
+        
         // Update the kinematic platform's physics body transform
         // Note: Directly setting rotation might fight with physics updates for kinematic bodies.
         // A potentially more stable way is to set the physics body's transform.
@@ -172,17 +173,13 @@ export default class MainScene extends Scene3D {
         // If tilting becomes unstable, investigate setting body.setWorldTransform directly.
         // this.platform.body.needUpdate = true; // May be needed if direct rotation doesn't sync
       }
-      if (this.spheresToSpawnNextFrame > 0 ){
-        this.spheresToSpawnNextFrame--;
-        this.spawnSphere();
-      }
+
 
     // **Handle Spheres Rolling Off (Optional Cleanup)**
       this.spheres = this.spheres.filter(sphere => {
         if (sphere.position.y < -10) { // Check if sphere fell far below
           console.log(`Cleaning up fallen sphere: ${sphere.name}`);
-          this.third.physics.destroy(sphere);
-          this.third.scene.remove(sphere);
+            this.third.destroy(sphere); // only use this function it handle removing physics aswell
             return false; // Remove from array
           }
         return true; // Keep in array
