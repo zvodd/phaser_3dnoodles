@@ -6,6 +6,7 @@ import {
 } from '@enable3d/phaser-extension';
 import { Vector3 } from 'three';
 import CreatePlayer from '../CreatePlayer.js';
+import CreateDebugButton from '../DebugButton.js';
 
 
 export default class MainScene extends Scene3D {
@@ -23,7 +24,6 @@ export default class MainScene extends Scene3D {
     this.player = null;
     this.playerController = null;
     this.joystick = null;
-    this.toggledbg = true;
     this.spheres = {}
     
   }
@@ -35,20 +35,8 @@ export default class MainScene extends Scene3D {
     this.third.lights.hemisphereLight({ intensity: 0.6 });
     this.third.camera.position.set(0, 18, 20);
     this.third.camera.lookAt(new Vector3(0, 5, 0));
+    CreateDebugButton(this)
 
-    // Debug Toggle UI (same as before)
-    this.dbg_button = this.add.text(32, this.cameras.main.height - 32, 'Toggle Debug', {
-        fontSize: '24px', fill: '#ffffff', backgroundColor: '#00000080'
-      })
-      .setPadding(10, 5).setOrigin(0, 1).setDepth(1).setInteractive();
-    this.dbg_button.on('pointerdown', () => {
-      this.toggledbg = !this.toggledbg;
-      if (this.toggledbg) this.third.physics.debug?.disable();
-      else this.third.physics.debug?.enable();
-      console.log(`Physics Debug ${this.toggledbg ? 'Disabled' : 'Enabled'}`);
-    });
-    if (this.toggledbg) this.third.physics.debug?.disable();
-    else this.third.physics.debug?.enable();
 
 
     // Create the Platform (same as before)
