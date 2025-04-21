@@ -16,8 +16,6 @@ export default class MainScene extends Scene3D {
 
   init() {
     this.accessThirdDimension();
-    // REMOVED: this.spheres = [];
-    this.activeSphereCount = 0;
     this.maxSpheres = 50;
     this.spawnCount = 0;
 
@@ -104,15 +102,9 @@ export default class MainScene extends Scene3D {
 
 
   /**
-   * Spawn a Sphere - No longer adds to this.spheres
+   * Spawn a Sphere
    */
   spawnSphere() {
-    // Check spawn limit using the counter
-    if (this.activeSphereCount >= this.maxSpheres) {
-      // console.log("Max spheres reached, skipping spawn.");
-      return;
-    }
-
     const radius = 0.3;
     // Use ExtendedObject3D for easier access to body/mesh properties if needed later
     const sphere = new ExtendedObject3D();
@@ -143,8 +135,6 @@ export default class MainScene extends Scene3D {
     sphere.body.setCcdMotionThreshold(1e-7);
     sphere.body.setCcdSweptSphereRadius(radius * 0.5);
 
-    // Increment the counter
-    this.activeSphereCount++;
     this.spheres[spawnid] = sphere;
   }
 
@@ -157,7 +147,6 @@ export default class MainScene extends Scene3D {
      console.log(`Collision detected between death plane and ${sphereObject.name}`);
      this.third.destroy(sphereObject);
      delete this.spheres[sphereObject.spawnid];
-     this.activeSphereCount--;
   }
 
 
@@ -174,17 +163,9 @@ export default class MainScene extends Scene3D {
     }
 
     console.log(`Grabbing and removing ${sphereToGrab.name}`);
-
-    // Mark it to prevent death plane collision firing simultaneously maybe
-    sphereToGrab.userData.isBeingDestroyed = true;
-
     // Use this.third.destroy
     this.third.destroy(sphereToGrab);
-
-    // Decrement the counter
-    this.activeSphereCount--;
-    console.log(`Active spheres (after grab): ${this.activeSphereCount}`);
-
+    delete this.spheres[sphereToGrab.spawnid];
   }
 
 
