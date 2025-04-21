@@ -1,15 +1,13 @@
 import {
   Scene3D,
-  THREE, // Keep for THREE.MathUtils
-  MathUtils // Explicitly import MathUtils if using modular THREE
+  THREE,
+  MathUtils,
+  ExtendedObject3D // Import ExtendedObject3D
 } from '@enable3d/phaser-extension';
-import { Vector3, Quaternion } from 'three'; // Keep Vector3, Quaternion might be needed later
+import { Vector3 } from 'three';
 import CreatePlayer from '../CreatePlayer.js';
 
 
-/**
- * MainScene Class
- */
 export default class MainScene extends Scene3D {
   constructor() {
     super({ key: 'MainScene' });
@@ -17,206 +15,216 @@ export default class MainScene extends Scene3D {
 
   init() {
     this.accessThirdDimension();
-    this.spheres = []; // Array to keep track of spawned spheres
-    this.player = null; // Reference to the player object
-    this.playerController = null; // Reference to the player controller instance
-    this.joystick = null; // Reference to joystick if used
-    this.toggledbg = true; // Start with debug disabled visually
+    // REMOVED: this.spheres = [];
+    this.activeSphereCount = 0;
+    this.maxSpheres = 50;
+    this.spawnCount = 0;
+
+    this.player = null;
+    this.playerController = null;
+    this.joystick = null;
+    this.toggledbg = true;
+    this.objects = {}
+    
   }
 
   create() {
-    // Initialize the 3D environment
+    // Basic Setup
     this.third.warpSpeed('camera', 'sky', 'grid', 'light');
-
-    // Adjust default light
     this.third.lights.directionalLight({ intensity: 0.8 });
     this.third.lights.hemisphereLight({ intensity: 0.6 });
-
-    // **Setup Fixed Camera**
     this.third.camera.position.set(0, 18, 20);
-    // Use lookAt for simplicity if the target is fixed (0, approx platform height, 0)
     this.third.camera.lookAt(new Vector3(0, 5, 0));
-    // Or keep your quaternion approach if preferred:
-    // this.third.camera.quaternion.setFromAxisAngle(new Vector3(-1, 0, 0), 0.5);
 
-    // **Debug Toggle UI**
-    this.scoreText = this.add.text(32, this.cameras.main.height - 32, 'Toggle Debug', {
-      fontSize: '24px', // Slightly smaller
-      fill: '#ffffff', // White text
-      backgroundColor: '#00000080' // Semi-transparent black background
-    })
-      .setPadding(10, 5) // Add padding
-      .setOrigin(0, 1)
-      .setDepth(1)
-      .setInteractive();
-
-    this.scoreText.on('pointerdown', () => {
-      this.toggledbg = !this.toggledbg; // Toggle the flag
-      if (this.toggledbg) {
-        this.third.physics.debug?.disable(); // Use optional chaining
-        console.log("Physics Debug Disabled");
-      } else {
-        this.third.physics.debug?.enable(); // Use optional chaining
-        console.log("Physics Debug Enabled");
-      }
+    // Debug Toggle UI (same as before)
+    this.dbg_button = this.add.text(32, this.cameras.main.height - 32, 'Toggle Debug', {
+        fontSize: '24px', fill: '#ffffff', backgroundColor: '#00000080'
+      })
+      .setPadding(10, 5).setOrigin(0, 1).setDepth(1).setInteractive();
+    this.dbg_button.on('pointerdown', () => {
+      this.toggledbg = !this.toggledbg;
+      if (this.toggledbg) this.third.physics.debug?.disable();
+      else this.third.physics.debug?.enable();
+      console.log(`Physics Debug ${this.toggledbg ? 'Disabled' : 'Enabled'}`);
     });
-    // Initially disable debug view based on the flag
-    if (this.toggledbg) {
-        this.third.physics.debug?.disable();
-    } else {
-        this.third.physics.debug?.enable();
-    }
+    if (this.toggledbg) this.third.physics.debug?.disable();
+    else this.third.physics.debug?.enable();
 
 
-    // **Create the Platform**
+    // Create the Platform (same as before)
     this.platform = this.third.add.box({ name: 'platform', width: 10, height: 0.5, depth: 10 }, { lambert: { color: 'gray' } });
     this.platform.position.set(0, 5, 0);
     this.platform.receiveShadow = true;
     this.third.physics.add.existing(this.platform, {
-      shape: 'box',
-      mass: 0, // Kinematic
-      width: 10, height: 0.5, depth: 10,
-      collisionFlags: 2, // Kinematic Object
-      // collisionMask: -1, // Default is usually fine, collides with everything (-1)
-      // collisionGroup: 2 // Default is usually fine (group 1) unless specific filtering needed
+      shape: 'box', width: 10, height: 0.5, depth: 10, mass: 0, collisionFlags: 2, // Kinematic
     });
-    // Set friction for the platform - affects how spheres roll
     this.platform.body.setFriction(0.8);
 
+    // Create Player
+    CreatePlayer(this); // Assuming this sets up player physics
 
-    // **Create Player** (Assuming this function sets `this.player` and `this.playerController`)
-    CreatePlayer(this);
+    // ADDED: Create the Death Plane for cleanup
+    this.createDeathPlane();
 
-    // **Spawn Spheres Periodically**
+    // Spawn Spheres Periodically
     this.time.addEvent({
-      delay: 2000, // Every 2 seconds
+      delay: 2000,
       callback: this.spawnSphere,
       callbackScope: this,
       loop: true
     });
+
+    // ADDED: Setup Collision Listener for Death Plane
+    // We listen for collisions on the death plane's body
+    this.deathPlane.body.on.collision((otherObject, event) => {
+        // Check if the colliding object is a sphere using userData
+        if (otherObject.userData?.isSphere && !otherObject.userData.isBeingDestroyed) {
+            this.handleSphereDeathPlaneCollision(otherObject);
+        }
+    });
+
+    console.log("Scene Created. Death plane and collision listener active.");
   }
 
   /**
-   * Spawn a Sphere
+   * Creates a static trigger volume below the platform to catch falling spheres.
+   */
+  createDeathPlane() {
+    const deathPlaneY = -10; // Position below the platform
+    const deathPlaneSize = 100; // Make it large enough
+    
+    // Use ExtendedObject3D which simplifies accessing body later
+    this.deathPlane = new ExtendedObject3D();
+    this.deathPlane.position.set(0, deathPlaneY, 0);
+    this.third.add.existing(this.deathPlane); // Add the container to the scene
+
+    // Add physics body to the ExtendedObject3D
+    this.third.physics.add.existing(this.deathPlane, {
+        shape: 'box',
+        width: deathPlaneSize,
+        height: 0.1, // Thin box
+        depth: deathPlaneSize,
+        mass: 0, // Static
+        collisionFlags: 4, // Static object
+        // ** Important: Mark as Sensor/Trigger **
+        // In Ammo.js (via Enable3D), setting collisionFlag 4 (CF_NO_CONTACT_RESPONSE) makes it a sensor
+    });
+    // Add userData for identification in collision callbacks
+    this.deathPlane.userData.isDeathPlane = true;
+    console.log("Death Plane created at y=", deathPlaneY);
+  }
+
+
+  /**
+   * Spawn a Sphere - No longer adds to this.spheres
    */
   spawnSphere() {
-    const ballcount = this.spheres.length;
-    if (this.spheres.length >= 50) return; // Limit number of spheres for performance
-
-    const radius = 0.3;
-    const sphere = this.third.add.sphere(
-      { name: `sphere_${ballcount+1}`, radius: radius }, // Use a potentially more unique name source
-      { lambert: { color: 0x2989d8 } }
-    );
-    sphere.castShadow = true;
-    sphere.receiveShadow = false; // Small objects often don't need to receive shadows
-
-    const spawnArea = 4.5; // platform width/2 - buffer
-    const x = (Math.random() - 0.5) * 2 * spawnArea;
-    const z = (Math.random() - 0.5) * 2 * spawnArea;
-    sphere.position.set(x, 10, z);
-
-    this.third.physics.add.existing(sphere, {
-      shape: 'sphere',
-      radius: radius,
-      mass: 0.5, // Give spheres some mass
-      restitution: 0.5, // Bounciness
-      friction: 0.5    // Rolling friction
-    });
-    // sphere.body.setCollisionFlags(0); // Default is 0 (Dynamic), no need to set explicitly
-
-    // Enable CCD for spheres - GOOD PRACTICE
-    sphere.body.setCcdMotionThreshold(1e-7); // Use a small threshold
-    sphere.body.setCcdSweptSphereRadius(radius * 0.5); // Use slightly smaller than radius often recommended
-
-    this.spheres.push(sphere);
-
-    // No specific collision callbacks needed here for basic physics interaction.
-  }
-
-  /**
-   * Grab a Sphere (Called by PlayerController's check)
-   */
-  grabSphere(player, sphere) {
-    console.log(`Attempting to grab sphere: ${sphere?.name}`); // Use optional chaining for safety
-
-    if (!sphere || !sphere.body) { // Check if sphere or its body still exists
-        console.warn("Attempted to grab an invalid sphere.");
-        return;
+    // Check spawn limit using the counter
+    if (this.activeSphereCount >= this.maxSpheres) {
+      // console.log("Max spheres reached, skipping spawn.");
+      return;
     }
 
-    // Placeholder: Destroy the sphere
-    console.log(`Grabbing and removing ${sphere.name}`);
-    const index = this.spheres.findIndex(s => s === sphere);
-    if (index > -1) this.spheres.splice(index, 1);
+    const radius = 0.3;
+    // Use ExtendedObject3D for easier access to body/mesh properties if needed later
+    const sphere = new ExtendedObject3D();
+    sphere.name = `sphere_${this.spawnCount++}`; // Or use a UUID
+    sphere.add(new THREE.Mesh(
+        new THREE.SphereGeometry(radius),
+        new THREE.MeshLambertMaterial({ color: 0x2989d8 })
+    ));
+    this.third.add.existing(sphere); // Add the container to the scene
 
-    // IMPORTANT: Use this.third.destroy, it handles removing the physics body AND the mesh
-    this.third.destroy(sphere);
+    sphere.castShadow = true;
+    sphere.receiveShadow = false; // Usually false for small dynamic objects
+
+    const spawnArea = 4.5;
+    const x = (Math.random() - 0.5) * 2 * spawnArea;
+    const z = (Math.random() - 0.5) * 2 * spawnArea;
+    sphere.position.set(x, 10, z); // Spawn position
+
+    // Add userData BEFORE adding physics - sometimes crucial
+    sphere.userData.isSphere = true; // Identify this object as a sphere
+    sphere.userData.isBeingDestroyed = false; // Flag to prevent double destruction
+
+    this.third.physics.add.existing(sphere, {
+      shape: 'sphere', radius: radius, mass: 0.5, restitution: 0.5, friction: 0.5
+    });
+
+    sphere.body.setCcdMotionThreshold(1e-7);
+    sphere.body.setCcdSweptSphereRadius(radius * 0.5);
+
+    // Increment the counter
+    this.activeSphereCount++;
+    // REMOVED: this.spheres.push(sphere);
+    // console.log(`Spawned ${sphere.name}. Active spheres: ${this.activeSphereCount}`);
+  }
+
+
+  /**
+   * Handles collision between a sphere and the death plane.
+   * This function is called by the collision listener.
+   */
+  handleSphereDeathPlaneCollision(sphereObject) {
+     console.log(`Collision detected between death plane and ${sphereObject.name}`);
+
+     // Double-check it's a sphere and not already being destroyed
+     if (!sphereObject.userData?.isSphere || sphereObject.userData.isBeingDestroyed) {
+         console.warn(`Collision with non-sphere or already destroying object: ${sphereObject.name}`);
+         return;
+     }
+
+     // Mark for destruction to prevent potential duplicate calls in the same frame
+     sphereObject.userData.isBeingDestroyed = true;
+     this.third.destroy(sphereObject);
+
+     // Decrement the counter
+     this.activeSphereCount--;
+  }
+
+
+  /**
+   * Grab a Sphere - Called by PlayerController/Interaction Logic
+   * Now only needs the specific sphere reference from the interaction (raycast/overlap).
+   * No array manipulation needed.
+   */
+  grabSphere(player, sphereToGrab) {
+    // Ensure the sphere object passed is valid and hasn't been destroyed already
+    if (!sphereToGrab || !sphereToGrab.body || sphereToGrab.userData?.isBeingDestroyed) {
+      console.warn(`Attempted to grab invalid or already destroying sphere: ${sphereToGrab?.name}`);
+      return;
+    }
+
+    console.log(`Grabbing and removing ${sphereToGrab.name}`);
+
+    // Mark it to prevent death plane collision firing simultaneously maybe
+    sphereToGrab.userData.isBeingDestroyed = true;
+
+    // Use this.third.destroy
+    this.third.destroy(sphereToGrab);
+
+    // Decrement the counter
+    this.activeSphereCount--;
+    console.log(`Active spheres (after grab): ${this.activeSphereCount}`);
+
   }
 
 
   update(time, delta) {
     // Update player controls
-    this.playerController?.update(time, delta); // Optional chaining
+    this.playerController?.update(time, delta);
 
-    // **Tilt the Platform**
-    if (this.platform && this.player) { // Ensure platform and player exist
-      // Convert player's world position to the platform's local coordinate system
-      const localPlayerPos = this.platform.worldToLocal(this.player.position.clone());
-
-      const k = 0.05; // Tilt sensitivity factor
-      const maxTilt = Math.PI / 12; // Max tilt approx 15 degrees
-
-      // Calculate tilt angles based on player's local position
-      // Tilt around X-axis based on player's Z position
-      // Tilt around Z-axis based on player's X position (negated to feel natural)
-      const tiltX = THREE.MathUtils.clamp(-k * localPlayerPos.z, -maxTilt, maxTilt);
-      const tiltZ = THREE.MathUtils.clamp( k * localPlayerPos.x, -maxTilt, maxTilt); // Note: Sign depends on desired tilt direction
-
-      // Apply rotation to the THREE.Object3D (the visual mesh)
-      this.platform.rotation.set(-tiltX, 0, -tiltZ);
-
-      // *** FIX: Signal the physics engine to update the kinematic body's transform ***
-      // This synchronizes the physics body's rotation with the visual mesh's rotation.
-      this.platform.body.needUpdate = true;
-
+    // Tilt the Platform (same logic)
+    if (this.platform && this.player) {
+        const localPlayerPos = this.platform.worldToLocal(this.player.position.clone());
+        const k = 0.05;
+        const maxTilt = Math.PI / 12;
+        const tiltX = - THREE.MathUtils.clamp(-k * localPlayerPos.z, -maxTilt, maxTilt);
+        const tiltZ = - THREE.MathUtils.clamp( k * localPlayerPos.x, -maxTilt, maxTilt);
+        this.platform.rotation.set(tiltX, 0, tiltZ);
+        this.platform.body.needUpdate = true;
     }
 
-    // **Sphere Management**
-    // Filter out destroyed or fallen spheres
-    this.spheres = this.spheres.filter(sphere => {
-        if (!sphere.body.hasBody) {
-           // sphere.body.activate();
-           console.log(`what the frick ${sphere.name}`)
-        }
 
-
-        // Check if the sphere object or its body still exists (might have been grabbed/destroyed)
-        if (!sphere || !sphere.body) {
-            if (sphere)
-            return false; // Remove from array if destroyed
-        }
-
-        // Check if sphere fell far below
-        if (sphere.position.y < -10) {
-          console.log(`Cleaning up fallen sphere: ${sphere.name}`);
-          // Ensure destroy happens cleanly
-          this.third.destroy(sphere); // Use this.third.destroy
-          return false; // Remove from array
-        }
-
-        // *** ATTEMPT TO MITIGATE DESYNC: Ensure active bodies stay active ***
-        // While Enable3D should handle sync, explicitly activating bodies *might*
-        // help in edge cases where they go to sleep unexpectedly.
-        // However, this might have performance implications if done excessively.
-        // Only activate if you strongly suspect sleeping issues are the cause of desync.
-
-
-
-        // If the sphere is still valid and above the cleanup threshold, keep it.
-        return true;
-    });
-
-    // Physics engine handles sphere rolling based on platform tilt, gravity, friction etc.
   }
-}
+} // End class

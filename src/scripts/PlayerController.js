@@ -94,7 +94,7 @@ export default class PlayerController {
    * (This is the foundation for the grab mechanic)
    */
   checkForGrab() {
-    if (!this.player || !this.scene.spheres || this.scene.spheres.length === 0) return;
+    if (!this.player ) return;
 
     const playerPos = this.player.position;
     const playerForward = new THREE.Vector3();
