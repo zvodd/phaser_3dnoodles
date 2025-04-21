@@ -24,7 +24,7 @@ export default class MainScene extends Scene3D {
     this.playerController = null;
     this.joystick = null;
     this.toggledbg = true;
-    this.objects = {}
+    this.spheres = {}
     
   }
 
@@ -78,7 +78,7 @@ export default class MainScene extends Scene3D {
     // We listen for collisions on the death plane's body
     this.deathPlane.body.on.collision((otherObject, event) => {
         // Check if the colliding object is a sphere using userData
-        if (otherObject.userData?.isSphere && !otherObject.userData.isBeingDestroyed) {
+        if (otherObject.userData?.isSphere) {
             this.handleSphereDeathPlaneCollision(otherObject);
         }
     });
@@ -128,7 +128,9 @@ export default class MainScene extends Scene3D {
     const radius = 0.3;
     // Use ExtendedObject3D for easier access to body/mesh properties if needed later
     const sphere = new ExtendedObject3D();
-    sphere.name = `sphere_${this.spawnCount++}`; // Or use a UUID
+    const spawnid = this.spawnCount++;
+    sphere.name = `sphere_${spawnid}`; // Or use a UUID
+    sphere.spawnid = this.spawnCount
     sphere.add(new THREE.Mesh(
         new THREE.SphereGeometry(radius),
         new THREE.MeshLambertMaterial({ color: 0x2989d8 })
@@ -145,7 +147,6 @@ export default class MainScene extends Scene3D {
 
     // Add userData BEFORE adding physics - sometimes crucial
     sphere.userData.isSphere = true; // Identify this object as a sphere
-    sphere.userData.isBeingDestroyed = false; // Flag to prevent double destruction
 
     this.third.physics.add.existing(sphere, {
       shape: 'sphere', radius: radius, mass: 0.5, restitution: 0.5, friction: 0.5
@@ -156,8 +157,7 @@ export default class MainScene extends Scene3D {
 
     // Increment the counter
     this.activeSphereCount++;
-    // REMOVED: this.spheres.push(sphere);
-    // console.log(`Spawned ${sphere.name}. Active spheres: ${this.activeSphereCount}`);
+    this.spheres[spawnid] = sphere;
   }
 
 
@@ -167,18 +167,8 @@ export default class MainScene extends Scene3D {
    */
   handleSphereDeathPlaneCollision(sphereObject) {
      console.log(`Collision detected between death plane and ${sphereObject.name}`);
-
-     // Double-check it's a sphere and not already being destroyed
-     if (!sphereObject.userData?.isSphere || sphereObject.userData.isBeingDestroyed) {
-         console.warn(`Collision with non-sphere or already destroying object: ${sphereObject.name}`);
-         return;
-     }
-
-     // Mark for destruction to prevent potential duplicate calls in the same frame
-     sphereObject.userData.isBeingDestroyed = true;
      this.third.destroy(sphereObject);
-
-     // Decrement the counter
+     delete this.spheres[sphereObject.spawnid];
      this.activeSphereCount--;
   }
 
@@ -190,7 +180,7 @@ export default class MainScene extends Scene3D {
    */
   grabSphere(player, sphereToGrab) {
     // Ensure the sphere object passed is valid and hasn't been destroyed already
-    if (!sphereToGrab || !sphereToGrab.body || sphereToGrab.userData?.isBeingDestroyed) {
+    if (!sphereToGrab || !sphereToGrab.body) {
       console.warn(`Attempted to grab invalid or already destroying sphere: ${sphereToGrab?.name}`);
       return;
     }

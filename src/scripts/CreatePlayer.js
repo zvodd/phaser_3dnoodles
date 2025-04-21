@@ -15,7 +15,7 @@ const isTouchDevice = 'ontouchstart' in window;
  */
 export default function CreatePlayer(scene){
     // **Create the Player**
-    scene.third.load.gltf('/assets/box_man.glb').then(object => {
+    scene.third.load.gltf('/assets/boxman.glb').then(object => {
       const man = object.scene.children[0];
       scene.player = new ExtendedObject3D(); // Assign to scene property
       scene.player.name = 'man';

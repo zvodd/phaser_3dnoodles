@@ -106,9 +106,7 @@ export default class PlayerController {
     let closestGrabbableSphere = null;
     let minDistanceSq = grabRange * grabRange;
 
-    for (const sphere of this.scene.spheres) {
-        if (!sphere.body) continue; // Skip spheres already potentially picked up or destroyed
-
+    for (const sphere of Object.values(this.scene.spheres)) {
         const spherePos = sphere.position;
         const vectorToSphere = spherePos.clone().sub(playerPos);
         const distanceSq = vectorToSphere.lengthSq();
