@@ -106,7 +106,7 @@ export default class PlayerController {
     let closestGrabbableSphere = null;
     let minDistanceSq = grabRange * grabRange;
 
-    for (const sphere of Object.values(this.scene.spheres)) {
+    for (const sphere of Object.values(this.scene.items)) {
         const spherePos = sphere.position;
         const vectorToSphere = spherePos.clone().sub(playerPos);
         const distanceSq = vectorToSphere.lengthSq();
@@ -128,7 +128,7 @@ export default class PlayerController {
 
     // If a grabbable sphere was found, trigger the grab action
     if (closestGrabbableSphere) {
-        this.scene.grabSphere(this.player, closestGrabbableSphere);
+        this.scene.grabItem(this.player, closestGrabbableSphere);
     } else {
       console.log("No sphere in range/view to grab.");
     }
