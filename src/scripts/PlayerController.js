@@ -71,15 +71,20 @@ export default class PlayerController {
     // Check if vertical velocity is near zero, indicating potential ground contact
     const raycaster = this.player.rayJump
     const pos = this.player.position
-    
-    raycaster.setRayFromWorld(pos.x, pos.y, pos.z)
-    raycaster.setRayToWorld(pos.x, pos.y + 3, pos.z)
+
+    raycaster.setRayFromWorld(pos.x, pos.y + 1, pos.z)
+    raycaster.setRayToWorld(pos.x, pos.y -0.1, pos.z)
     raycaster.rayTest()
-    if (raycaster.hasHit()) {    
-        const { x, y, z } = raycaster.getHitPointWorld()
-        const { name } = raycaster.getCollisionObject()
-        console.log('closest:', `${name}:`, `x:${x.toFixed(2)}`, `y:${x.toFixed(2)}`, `z:${x.toFixed(2)}`)
-    }
+
+    // if (raycaster.hasHit()) {
+    //     const [points, objects] = [raycaster.getHitPointsWorld(), raycaster.getCollisionObjects()]
+    //     for (let i = 0 ; i < points.length; i++){
+    //         const { x, y, z } = points[i]
+    //         const { name } = objects[i]
+    //         console.log('rayhit:', `${name}:`, `x:${x.toFixed(2)}`, `y:${x.toFixed(2)}`, `z:${x.toFixed(2)}`)
+    //     }
+    // }
+    
     if (raycaster.hasHit()) {
         this.canJump = false;
         this.isJumping = true;
