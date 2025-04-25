@@ -7,6 +7,7 @@ import {
 import { Vector3 } from 'three';
 import CreatePlayer from './CreatePlayer.js'; // Assuming this exists and works
 import CreateDebugButton from './DebugButton.js'; // Assuming this exists
+import CreateBillboardMaterial from './billboard_material.js'
 
 export default class MainScene extends Scene3D {
     constructor() {
@@ -28,7 +29,7 @@ export default class MainScene extends Scene3D {
         // Store item types and texture references
         this.itemTypes = ['noodles', 'leek', 'garlic', 'prawn'];
         this.itemTextures = {}; // To store loaded textures
-        this.modelNames = ["smooth_flat_disc","billboard", "box_man", "cannon", "wok"];
+        this.modelNames = ["smooth_flat_disc","boxboard", "box_man", "cannon", "wok"];
         this.modelGltf = {};
     }
 
@@ -36,7 +37,7 @@ export default class MainScene extends Scene3D {
         this.modelNames.forEach(name => {
           this.third.load.gltf(`assets/${name}.glb`).then(gltf => {
             this.modelGltf[name] = gltf
-            this.modelNames = ["smooth_flat_disc","billboard"]
+            this.modelNames = ["smooth_flat_disc","boxboard"]
           }).catch(error => console.error(`Failed to load ${name} GLB:`, error));
         });
 
@@ -191,13 +192,13 @@ export default class MainScene extends Scene3D {
         itemContainer.userData.itemType = itemType; // Store type in userData
 
         // Find the mesh and apply the correct texture
-        const mesh = this.modelGltf['billboard'].scene.children[0].clone();
+        const mesh = this.modelGltf["boxboard"].scene.children[0].clone();
         if (mesh && mesh.material) {
             const texture = this.itemTextures[itemType];
             if (texture) {
                 // Clone the material to avoid changing all instances, then set the map
-                mesh.material = mesh.material.clone();
-                mesh.material.map = texture;
+                mesh.material = CreateBillboardMaterial(texture) 
+                // mesh.material.map = texture;
                 mesh.material.transparent = true;
                 mesh.material.alphaTest = 0.5; // Adjust as needed
                 mesh.material.needsUpdate = true; // Important!
@@ -208,12 +209,6 @@ export default class MainScene extends Scene3D {
                 mesh.material = new THREE.MeshBasicMaterial({ color: 0xff00ff });
             }
             mesh.castShadow = true; // Billboard mesh can cast shadow
-        } else {
-            console.error("Could not find mesh or material in billboard.glb");
-            // Add a fallback visual if cloning/texturing fails
-            const fallbackGeo = new THREE.SphereGeometry(0.3);
-            const fallbackMat = new THREE.MeshLambertMaterial({ color: 0xff00ff });
-            itemContainer.add(new THREE.Mesh(fallbackGeo, fallbackMat));
         }
 
         itemContainer.add(mesh); // Add the textured model to the container
@@ -325,19 +320,6 @@ export default class MainScene extends Scene3D {
                  // This might happen briefly if player/platform are destroyed mid-update
             }
 
-        }
-
-        // --- Billboard Logic for Items ---
-        const cameraPosition = this.third.camera.position;
-        for (const spawnId in this.items) {
-            const item = this.items[spawnId];
-            if (item && item.visible) { // Check if item exists and is visible
-                // Make the item's container face the camera (y-axis rotation only for classic billboard)
-                 // item.lookAt(cameraPosition.x, item.position.y, cameraPosition.z);
-
-                 // Or make the entire object face the camera (including x/z tilt)
-                 item.lookAt(cameraPosition);
-            }
         }
     }
 }
