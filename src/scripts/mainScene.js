@@ -18,10 +18,12 @@ export default class MainScene extends Scene3D {
         this.accessThirdDimension();
         this.maxItems = 50; // Renamed from maxSpheres
         this.spawnCount = 0;
+        this.isPlaying = false;
 
         this.player = null;
         this.playerController = null;
         this.joystick = null;
+
 
         // *** Use a dictionary for item tracking ***
         this.items = {}; // Renamed from spheres
@@ -141,6 +143,8 @@ export default class MainScene extends Scene3D {
              // else if (otherObject === this.player) { /* handle player death */ }
         });
 
+        this.isPlaying = true
+
         console.log("Scene Created. Death plane and collision listener active for items.");
     }
 
@@ -208,8 +212,9 @@ export default class MainScene extends Scene3D {
                  // Optional: Apply a default/error texture or color
                 mesh.material = new THREE.MeshBasicMaterial({ color: 0xff00ff });
             }
-            mesh.castShadow = true; // Billboard mesh can cast shadow
+            //mesh.castShadow = true; // Billboard mesh can cast shadow
         }
+        itemContainer.add 
 
         itemContainer.add(mesh); // Add the textured model to the container
 
@@ -270,7 +275,7 @@ export default class MainScene extends Scene3D {
      */
     grabItem(player, itemToGrab) {
         // Ensure the item object is valid and exists in our tracking
-        if (!itemToGrab || !itemToGrab.body || !this.items[itemToGrab.spawnid]) {
+        if (!itemToGrab || !itemToGrab.body || !this.items[itemToGrab?.spawnid]) {
             // console.warn(`Attempted to grab invalid or already removed item: ${itemToGrab?.name}`);
             return null; // Indicate failure or return nothing
         }
@@ -281,45 +286,37 @@ export default class MainScene extends Scene3D {
 
         // Remove from physics and scene
         this.third.destroy(itemToGrab);
-
         // *** Remove from the item tracking dictionary ***
         delete this.items[spawnId];
-        console.log(`Item ${spawnId} removed from dictionary via grab.`);
 
-        // ** TODO: Implement Actual Pickup Logic **
-        // - Maybe return the itemType or itemObject (before destruction if needed)
-        // - Signal the PlayerController to hold the item
-        // - Create a representation of the item attached to the player
-        return { type: itemType, id: spawnId }; // Example: return info about the grabbed item
+        return { type: itemType, id: spawnId };
     }
 
 
     update(time, delta) {
-        // Update player controls if the controller exists
-        this.playerController?.update(time, delta);
+        if (!this.isPlaying) return
 
+        this.playerController?.update(time, delta)
+        
         // Tilt the Platform based on player position
-        if (this.platform && this.platform.body && this.player && this.player.body) { // Check bodies exist
-            try {
-                const localPlayerPos = this.platform.worldToLocal(this.player.position.clone());
-                const k = 0.05; // Tilt sensitivity factor
-                const maxTilt = Math.PI / 12; // Maximum tilt angle
+        try {
+            const localPlayerPos = this.platform.worldToLocal(this.player.position.clone());
+            const k = 0.05; // Tilt sensitivity factor
+            const maxTilt = Math.PI / 12; // Maximum tilt angle
 
-                // Calculate tilt angles based on player's local position on the platform
-                // Clamp the values to prevent excessive tilting
-                const tiltX = -THREE.MathUtils.clamp(-k * localPlayerPos.z, -maxTilt, maxTilt);
-                const tiltZ = -THREE.MathUtils.clamp(k * localPlayerPos.x, -maxTilt, maxTilt);
+            // Calculate tilt angles based on player's local position on the platform
+            // Clamp the values to prevent excessive tilting
+            const tiltX = -THREE.MathUtils.clamp(-k * localPlayerPos.z, -maxTilt, maxTilt);
+            const tiltZ = -THREE.MathUtils.clamp(k * localPlayerPos.x, -maxTilt, maxTilt);
+            this.platform.rotation.set(tiltX, 0, tiltZ);
 
-                // Apply the rotation to the platform's mesh
-                this.platform.rotation.set(tiltX, 0, tiltZ);
-
-                // **Crucially, signal the physics body needs updating** because we moved a kinematic object
-                this.platform.body.needUpdate = true;
-            } catch (error) {
-                 console.error("Error during platform tilt calculation:", error);
-                 // This might happen briefly if player/platform are destroyed mid-update
-            }
-
+            // **Crucially, signal the physics body needs updating** because we moved a kinematic object
+            this.platform.body.needUpdate = true;
+        } catch (error) {
+             console.error("Error during platform tilt calculation:", error);
+             // This might happen briefly if player/platform are destroyed mid-update
         }
+
+        
     }
 }
