@@ -15,13 +15,16 @@ const isTouchDevice = 'ontouchstart' in window;
  */
 export default function CreatePlayer(scene){
     // **Create the Player**
-    scene.third.load.gltf('/assets/boxman.glb').then(object => {
+      const object = scene.modelGltf['box_man']
       const man = object.scene.children[0];
       scene.player = new ExtendedObject3D(); // Assign to scene property
       scene.player.name = 'man';
       // scene.player.rotateY(Math.PI); // Start facing positive Z
       scene.player.add(man);
       scene.player.castShadow = true; // Apply shadow casting to the main object
+
+      scene.player.rayJumpTest = scene.third.physics.add.raycaster()
+      // debugger
 
       scene.player.traverse(child => {
         if (child.isMesh) {
@@ -50,8 +53,8 @@ export default function CreatePlayer(scene){
       scene.third.physics.add.existing(scene.player, {
         shape: 'capsule', // Use a capsule for better character movement
         radius: 0.25,
-        height: 0.5, // Adjust height/radius as needed
-        offset: { y: -0.4 } // Adjust offset to center the capsule
+        height: 0.6, // Adjust height/radius as needed
+        offset: { y: -0.7 } // Adjust offset to center the capsule
       });
       scene.player.body.setFriction(0.8);
       scene.player.body.setAngularFactor(0, 0, 0); // Prevent capsule from falling over
@@ -70,5 +73,5 @@ export default function CreatePlayer(scene){
        }
        scene.playerController = new PlayerController(scene, scene.player, scene.joystick);
 
-    }); // End of GLTF loading
+    
 }

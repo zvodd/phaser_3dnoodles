@@ -28,19 +28,17 @@ export default class MainScene extends Scene3D {
         // Store item types and texture references
         this.itemTypes = ['noodles', 'leek', 'garlic', 'prawn'];
         this.itemTextures = {}; // To store loaded textures
-        this.billboardModel = null; // To store the loaded billboard GLB scene
+        this.modelNames = ["smooth_flat_disc","billboard", "box_man", "cannon", "wok"];
+        this.modelGltf = {};
     }
 
     preload() {
-        // Load Platform Model
-        this.third.load.gltf('assets/flatdisc.glb').then(gltf => {
-            this.platformModelSource = gltf; // Store the loaded GLTF data
-        }).catch(error => console.error("Failed to load platform GLB:", error));
-
-        // Load Billboard Model for Items
-        this.third.load.gltf('assets/billboard.glb').then(gltf => {
-            this.billboardModel = gltf; // Store the loaded GLTF data
-        }).catch(error => console.error("Failed to load billboard GLB:", error));
+        this.modelNames.forEach(name => {
+          this.third.load.gltf(`assets/${name}.glb`).then(gltf => {
+            this.modelGltf[name] = gltf
+            this.modelNames = ["smooth_flat_disc","billboard"]
+          }).catch(error => console.error(`Failed to load ${name} GLB:`, error));
+        });
 
         // Load Item Textures
         this.itemTypes.forEach(type => {
@@ -56,13 +54,18 @@ export default class MainScene extends Scene3D {
 
 
     async create() {
+        const check_loaded = () => { return (
+            Object.keys(this.itemTextures).length < this.itemTypes.length
+            || Object.keys(this.modelGltf).length < this.modelNames.length
+          )};
         // Wait for models and textures needed immediately (optional, better check they exist)
         // A more robust approach involves checking if resources are loaded before using them.
-        if (!this.platformModelSource || !this.billboardModel || Object.keys(this.itemTextures).length < this.itemTypes.length) {
+        
+        if (check_loaded()) {
              console.warn("Assets might not be fully loaded yet. Waiting briefly...");
              // Basic wait, consider a more robust loading state manager
              await new Promise(resolve => setTimeout(resolve, 500));
-             if (!this.platformModelSource || !this.billboardModel || Object.keys(this.itemTextures).length < this.itemTypes.length) {
+             if (check_loaded()) {
                 console.error("Essential assets failed to load. Aborting scene creation.");
                 // Handle error appropriately - show message, switch scene, etc.
                 return;
@@ -81,7 +84,7 @@ export default class MainScene extends Scene3D {
 
         // --- Create the Platform using flatdisc.glb ---
         // Clone the scene from the loaded GLTF data
-        const platformMesh = this.platformModelSource.scene.children[0].clone();
+        const platformMesh = this.modelGltf["smooth_flat_disc"].scene.children[0].clone();
 
         // Find the mesh within the cloned scene (adjust if your GLB has a different structure)
         this.platform = platformMesh;
@@ -169,7 +172,7 @@ export default class MainScene extends Scene3D {
      */
     spawnItem() {
         // Don't spawn if maximum count reached or billboard model not loaded
-        if (Object.keys(this.items).length >= this.maxItems || !this.billboardModel) {
+        if (Object.keys(this.items).length >= this.maxItems) {
             console.warn("Max items reached or billboard model not ready. Skipping spawn.");
             return;
         }
@@ -188,7 +191,7 @@ export default class MainScene extends Scene3D {
         itemContainer.userData.itemType = itemType; // Store type in userData
 
         // Find the mesh and apply the correct texture
-        const mesh = this.billboardModel.scene.children[0].clone();
+        const mesh = this.modelGltf['billboard'].scene.children[0].clone();
         if (mesh && mesh.material) {
             const texture = this.itemTextures[itemType];
             if (texture) {
