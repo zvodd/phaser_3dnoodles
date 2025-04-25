@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser'
 import { enable3d, Canvas } from '@enable3d/phaser-extension'
-import MainScene from './scenes/mainScene'
-import PreloadScene from './scenes/preloadScene'
+import MainScene from './mainScene'
+import PreloadScene from './preloadScene'
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.WEBGL,

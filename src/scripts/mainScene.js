@@ -5,8 +5,8 @@ import {
     ExtendedObject3D // Import ExtendedObject3D
 } from '@enable3d/phaser-extension';
 import { Vector3 } from 'three';
-import CreatePlayer from '../CreatePlayer.js'; // Assuming this exists and works
-import CreateDebugButton from '../DebugButton.js'; // Assuming this exists
+import CreatePlayer from './CreatePlayer.js'; // Assuming this exists and works
+import CreateDebugButton from './DebugButton.js'; // Assuming this exists
 
 export default class MainScene extends Scene3D {
     constructor() {
@@ -340,4 +340,4 @@ export default class MainScene extends Scene3D {
             }
         }
     }
-} // End class
+}
