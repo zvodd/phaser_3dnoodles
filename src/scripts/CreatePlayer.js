@@ -23,8 +23,7 @@ export default function CreatePlayer(scene){
       scene.player.add(man);
       scene.player.castShadow = true; // Apply shadow casting to the main object
 
-      scene.player.rayJumpTest = scene.third.physics.add.raycaster()
-      // debugger
+      scene.player.rayJump = scene.third.physics.add.raycaster()
 
       scene.player.traverse(child => {
         if (child.isMesh) {
