@@ -84,7 +84,7 @@ export default class PlayerController {
     //         console.log('rayhit:', `${name}:`, `x:${x.toFixed(2)}`, `y:${x.toFixed(2)}`, `z:${x.toFixed(2)}`)
     //     }
     // }
-    
+
     if (raycaster.hasHit()) {
         this.canJump = false;
         this.isJumping = true;
@@ -122,7 +122,7 @@ export default class PlayerController {
     let closestGrabbableSphere = null;
     let minDistanceSq = grabRange * grabRange;
 
-    for (const sphere of Object.values(this.scene.items)) {
+    for (const sphere of Object.values(this.itemManager.items)) {
         const spherePos = sphere.position;
         const vectorToSphere = spherePos.clone().sub(playerPos);
         const distanceSq = vectorToSphere.lengthSq();
