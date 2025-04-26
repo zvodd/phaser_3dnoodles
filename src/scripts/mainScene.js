@@ -103,7 +103,7 @@ export default class MainScene extends Scene3D {
         this.third.renderer.shadowMap.type = PCFSoftShadowMap;
 
         // Instantiate UI Components
-        CreateDebugButton(this);
+        // CreateDebugButton(this);
         this.helpOverlay = new HelpOverlay(this);
 
         // Instantiate Platform Component
@@ -116,6 +116,18 @@ export default class MainScene extends Scene3D {
              console.error("Failed to create platform object. Aborting.");
              return;
         }
+
+        console.log("Setting up cannonball hit listener...");
+        this.events.on('cannonball_hit_platform', (data) => {
+            // console.log("Scene received cannonball_hit_platform event", data); // Debug log
+            // Check if the platform component exists and has the method
+            if (this.platformComponent && typeof this.platformComponent.applyTiltImpulse === 'function') {
+                // Call the platform's method with the collision data
+                this.platformComponent.applyTiltImpulse(data.collisionPoint, data.impulseVector);
+            } else {
+                console.warn("Platform component or applyTiltImpulse method not available when event received.");
+            }
+        }, this);
 
         // Create Other Game Objects
         this.cannon = new Cannon(this);
