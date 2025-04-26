@@ -114,7 +114,7 @@ export default class Cannon {
         );
 
         // Define cannonball speed
-        const speed = 40; // Units per second, adjust as desired
+        const speed = 37.5 + (Math.random() * 5.0); // Units per second, adjust as desired
         const velocity = worldDirection.clone().multiplyScalar(speed);
 
         // Create and fire the cannonball

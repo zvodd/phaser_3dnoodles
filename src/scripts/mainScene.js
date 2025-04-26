@@ -140,18 +140,36 @@ export default class MainScene extends Scene3D {
         });
 
 
-        this.time.addEvent({
-            delay: 3000,
-            callback:()=>{ this.cannon.fire();},
-            callbackScope: this.itemManager,
-            loop: true
-        });
+        // fire the cannon
+        
+        this.scheduleNextCannonFire(); // Start the sequence
 
         this.isPlaying = true;
         console.log("Scene Created.");
 
         // Scene Shutdown Listener
         this.events.on('shutdown', this.shutdown, this);
+    }
+
+    /**
+     * Fires the cannon and schedules the next fire event with a random delay.
+     */
+    scheduleNextCannonFire() {
+        // delay if scene isn't playing or cannon is missing
+        if (!this.isPlaying || !this.cannon) {
+            this.cannonTimer = this.time.delayedCall(1000, this.scheduleNextCannonFire, [], this);
+        }
+
+        // Define the random delay range (milliseconds)
+        const minDelay = 2500;
+        const maxDelay = 4500;
+        const nextDelay = Phaser.Math.Between(minDelay, maxDelay);
+
+        // Fire the cannon
+        this.cannon.fire();
+
+        // Schedule the next call recursively
+        this.cannonTimer = this.time.delayedCall(nextDelay, this.scheduleNextCannonFire, [], this);
     }
 
     createDeathPlane() {
@@ -169,8 +187,6 @@ export default class MainScene extends Scene3D {
         });
     }
 
-    // REMOVE attemptToGrabItem - this logic is now inside Player._checkForGrab
-    // attemptToGrabItem() { ... }
 
     update(time, delta) {
         if (!this.isPlaying) return;
