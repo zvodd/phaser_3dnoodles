@@ -240,11 +240,8 @@ export default class Player {
 
         // --- Ground Check ---
         const pos = this.playerObject.position;
-        // Raycast down slightly from near the player's feet position
-        const rayOriginOffset = 0.1; // How far above feet to start ray
-        const rayDistance = 0.25;    // How far down to check
-        this.rayJump.setRayFromWorld(pos.x, pos.y + rayOriginOffset, pos.z);
-        this.rayJump.setRayToWorld(pos.x, pos.y - rayDistance, pos.z);
+        this.rayJump.setRayFromWorld(pos.x, pos.y + 1, pos.z)
+        this.rayJump.setRayToWorld(pos.x, pos.y -0.1, pos.z)
         this.rayJump.rayTest();
         this.isGrounded = this.rayJump.hasHit();
         this.playerObject.userData.isGrounded = this.isGrounded; // Update userData too
@@ -281,20 +278,40 @@ export default class Player {
             this.physicsBody.setAngularVelocityY(0);
         }
 
-        // --- Handle Animations ---
+    // --- Handle Animations ---
         const isMoving = this.moveDirection.lengthSq() > 0.01;
+        const currentAnimName = this.playerObject.anims?.current; // Get current animation name string
+        let targetAnimName = currentAnimName; // Start with current as default target
+
+        // Determine the target animation based on state
         if (this.isJumping) {
-            // Jump animation handled in jump()
-        } else if (this.isGrounded && isMoving) {
-            if (this.playerObject.anims?.current !== 'run') {
-                this.playerObject.anims?.play('run');
+            // jump() triggers 'jump_running' once. Let's assume this covers the initial jump phase.
+            // We might want a specific looping 'in_air' animation if jump_running doesn't loop or look right.
+            // For now, let's assume jump_running might still be playing or we transition below.
+            // If jump_running is short, the 'else' block below (falling) will likely take over quickly.
+            targetAnimName = 'jump_running'; // Keep jump anim playing while isJumping flag is true
+                                             // OR assign a specific looping jump/fall anim here if needed.
+        } else if (this.isGrounded) {
+            // --- On the ground ---
+            if (isMoving) {
+                targetAnimName = 'run';
+            } else {
+                targetAnimName = 'idle';
             }
-        } else if (this.isGrounded && !isMoving) {
-            if (this.playerObject.anims?.current !== 'idle') {
-                this.playerObject.anims?.play('idle');
-            }
+        } else {
+            // --- In the air (Falling or after jump ended but before landing) ---
+            // Choose your desired falling animation name here.
+            // Options: 'fall', reuse 'jump_running' (if it loops well), 'idle' (can look static).
+            targetAnimName = 'jump_running'; // *** ADJUST THIS *** to your actual falling animation name.
+                                             // e.g., 'fall', or keep 'jump_running'
         }
-        // Note: Add falling animation check if needed (e.g., if !this.isGrounded && !this.isJumping)
+
+        // Play the animation only if the target is different from the current one
+        // AND the target animation exists.
+        if (targetAnimName && targetAnimName !== currentAnimName) {
+            this.playerObject.anims.play(targetAnimName);
+        }
+        // --- End Handle Animations ---
 
         // --- Handle Actions (Keyboard) ---
         if (Phaser.Input.Keyboard.JustDown(this.keys.space)) {
