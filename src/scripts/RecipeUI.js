@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 
 /**
  * Manages and displays a recipe sequence using ingredient images.
- * Handles checking received items against the recipe and triggers callbacks.
+ * Handles checking received items against the recipe, triggers callbacks,
+ * and implements a failure animation state.
  */
 export default class RecipeUI {
     /**
@@ -20,6 +21,7 @@ export default class RecipeUI {
      * @param {number} [config.spacing=10] Spacing between ingredient images.
      * @param {number} [config.borderThickness=3] Thickness of the green border.
      * @param {number} [config.completionDelay=1000] Delay in ms before generating a new recipe after completion.
+     * @param {number} [config.failureDuration=1000] Duration in ms for the failure animation (red tint).
      * @param {function(string):void} onCompleteCallback Function to call when the recipe is successfully completed. Receives uiId.
      * @param {function(string, string, string):void} onFailureCallback Function to call when the wrong item is received. Receives uiId, needed itemType, received itemType.
      */
@@ -28,7 +30,7 @@ export default class RecipeUI {
         uiId,
         x, y,
         availableItemTypes,
-        itemTextures, // These are likely THREE textures, need adaptation for Phaser Images
+        itemTextures, // Assumes these are registered as Phaser textures
         config = {},
         onCompleteCallback,
         onFailureCallback
@@ -38,7 +40,7 @@ export default class RecipeUI {
         this.x = x;
         this.y = y;
         this.availableItemTypes = availableItemTypes;
-        this.itemTextures = itemTextures; // Store textures
+        this.itemTextures = itemTextures;
         this.onComplete = onCompleteCallback;
         this.onFailure = onFailureCallback;
 
@@ -50,31 +52,27 @@ export default class RecipeUI {
             spacing: 10,
             borderThickness: 3,
             completionDelay: 1000,
+            failureDuration: 1000, // Added: Duration for failure state
         };
         this.config = { ...defaults, ...config };
 
         // --- State ---
-        this.currentRecipe = []; // Array of item type strings
+        this.currentRecipe = [];
         this.neededIngredientIndex = 0;
         this.uiElements = []; // Array of { image: Phaser.GameObjects.Image, border: Phaser.GameObjects.Graphics }
+        this.isFailing = false; // Added: State to track failure animation
+        this.failureTimer = null; // Added: Timer event for failure state duration
 
-        // --- Phaser Texture Adaptation ---
-        // We need Phaser Textures for Phaser Images. Let's assume we have registered
-        // the THREE textures with Phaser's texture manager using the itemType as the key.
-        // If not, this needs to be done in MainScene's preload/create.
-        // Example (in MainScene):
-        // this.itemTypes.forEach(type => {
-        //    const threeTexture = this.itemTextures[type];
-        //    if (threeTexture && threeTexture.image) {
-        //       this.textures.addImage(type, threeTexture.image);
-        //    }
-        // });
+        // --- Phaser Texture Adaptation Check ---
+        // Ensure textures are registered in the scene before use.
+        // Example registration logic should be in MainScene.
 
         this._generateNewRecipe();
     }
 
     /**
      * Generates a new random recipe and updates the UI display.
+     * Ensures any failure state visuals are cleared.
      * @private
      */
     _generateNewRecipe() {
@@ -84,6 +82,13 @@ export default class RecipeUI {
             if (element.border) element.border.destroy();
         });
         this.uiElements = [];
+
+        // Ensure failure state is reset visually and logically
+        this.isFailing = false;
+        if (this.failureTimer) {
+            this.failureTimer.remove();
+            this.failureTimer = null;
+        }
 
         // Generate recipe
         const numItems = Phaser.Math.Between(this.config.minItems, this.config.maxItems);
@@ -95,17 +100,15 @@ export default class RecipeUI {
         this.neededIngredientIndex = 0;
         console.log(`RecipeUI (${this.uiId}) new recipe: [${this.currentRecipe.join(', ')}]`);
 
-        // Create new UI elements (Images and Borders)
+        // Create new UI elements
         let currentX = this.x;
-        this.currentRecipe.forEach((itemType, index) => {
-            // --- Create Image ---
-            // Use the itemType as the key for the Phaser texture
+        this.currentRecipe.forEach((itemType) => {
             const img = this.scene.add.image(currentX, this.y, itemType)
-                .setOrigin(0, 0) // Top-left origin
+                .setOrigin(0, 0)
                 .setDisplaySize(this.config.imageSize, this.config.imageSize)
-                .setScrollFactor(0); // Make UI fixed on screen
+                .setScrollFactor(0)
+                .setTint(0xffffff); // Ensure default tint
 
-            // --- Create Border (initially hidden) ---
             const border = this.scene.add.graphics({ x: currentX, y: this.y })
                 .lineStyle(this.config.borderThickness, 0x00FF00, 1) // Green border
                 .strokeRect(0, 0, this.config.imageSize, this.config.imageSize)
@@ -113,11 +116,10 @@ export default class RecipeUI {
                 .setVisible(false); // Start hidden
 
             this.uiElements.push({ image: img, border: border });
-
-            currentX += this.config.imageSize + this.config.spacing; // Move X for next image
+            currentX += this.config.imageSize + this.config.spacing;
         });
 
-        this._updateUiDisplay(); // Set initial border visibility
+        this._updateUiDisplay();
     }
 
     /**
@@ -125,9 +127,13 @@ export default class RecipeUI {
      * @private
      */
     _updateUiDisplay() {
+        // Don't update borders if in failure state (they should be red)
+        if (this.isFailing) return;
+
         this.uiElements.forEach((element, index) => {
+            // Reset tint to default white
+            element.image.setTint(0xffffff);
             if (element.border) {
-                // Show border if the item at this index has been collected
                 element.border.setVisible(index < this.neededIngredientIndex);
             }
         });
@@ -135,17 +141,23 @@ export default class RecipeUI {
 
     /**
      * Processes an item received by the associated Wok.
-     * Checks if it matches the current recipe requirement.
      * @param {string} receivedItemType The type of the item received.
      * @param {ExtendedObject3D} itemObject The physics object of the item (for destruction).
      */
     handleItem(receivedItemType, itemObject) {
         console.log(`RecipeUI (${this.uiId}) handling item: ${receivedItemType}`);
 
+        // --- Check if currently in failure state ---
+        if (this.isFailing) {
+            console.log(`RecipeUI (${this.uiId}): Currently in failure state, ignoring item.`);
+            this._destroyItem(itemObject); // Still destroy the item
+            return;
+        }
+
         // Ignore if recipe already complete (during completion delay)
         if (this.neededIngredientIndex >= this.currentRecipe.length) {
             console.log(`RecipeUI (${this.uiId}): Recipe already complete or pending reset.`);
-            this._destroyItem(itemObject); // Still destroy the item
+            this._destroyItem(itemObject);
             return;
         }
 
@@ -161,38 +173,60 @@ export default class RecipeUI {
                 // --- Recipe Complete ---
                 console.log(`RecipeUI (${this.uiId}): Recipe Complete!`);
                 if (typeof this.onComplete === 'function') {
-                    this.onComplete(this.uiId); // Trigger callback
+                    this.onComplete(this.uiId);
                 }
-                // Schedule regeneration
+                // Schedule regeneration after delay
                 this.scene.time.delayedCall(this.config.completionDelay, this._generateNewRecipe, [], this);
-            } else {
-                 // --- More items needed ---
-                 // Optional: Play a success sound feedback
             }
+            // else: More items needed
 
         } else {
             // --- Incorrect Item ---
-            console.log(`RecipeUI (${this.uiId}): WRONG item! Needed ${neededItem}, got ${receivedItemType}. Resetting.`);
-            this.neededIngredientIndex = 0; // Reset progress
-            this._updateUiDisplay(); // Hide all borders
+            console.log(`RecipeUI (${this.uiId}): WRONG item! Needed ${neededItem}, got ${receivedItemType}. Starting failure state.`);
+            this.isFailing = true; // Enter failure state
+            this.neededIngredientIndex = 0; // Reset progress logically
+
+            // Trigger failure callback immediately
             if (typeof this.onFailure === 'function') {
-                this.onFailure(this.uiId, neededItem, receivedItemType); // Trigger callback
+                this.onFailure(this.uiId, neededItem, receivedItemType);
             }
-            // Optional: Play a failure sound feedback
-            // Optional: Regenerate recipe immediately on failure?
-            // this._generateNewRecipe();
+
+            // Apply red tint and hide borders
+            this.uiElements.forEach(element => {
+                element.image.setTint(0xff0000); // Red tint
+                if (element.border) element.border.setVisible(false);
+            });
+
+            // Schedule end of failure state and recipe reroll
+            this.failureTimer = this.scene.time.delayedCall(
+                this.config.failureDuration,
+                () => {
+                    this.isFailing = false; // Exit failure state
+                    this.failureTimer = null;
+                    console.log(`RecipeUI (${this.uiId}): Failure state ended. Rerolling recipe.`);
+                    this._generateNewRecipe(); // Generate a new recipe
+                },
+                [],
+                this
+            );
         }
 
-        // Destroy the item regardless of correct/incorrect
+        // Destroy the item regardless of correct/incorrect (unless handled by failure state)
         this._destroyItem(itemObject);
     }
 
-     /**
+    /**
      * Safely destroys the item using the scene's item manager.
      * @param {ExtendedObject3D} itemObject
      * @private
      */
     _destroyItem(itemObject) {
+        // Check if the item still exists before trying to destroy
+        if (!itemObject || !itemObject.body || itemObject.body.isDisposed) {
+             console.log(`RecipeUI (${this.uiId}): Item already destroyed or invalid.`);
+             return;
+        }
+
         if (this.scene.itemManager && typeof this.scene.itemManager.handleCollision === 'function') {
             this.scene.itemManager.handleCollision(itemObject);
         } else {
@@ -204,16 +238,26 @@ export default class RecipeUI {
 
 
     /**
-     * Cleans up UI elements associated with this recipe display.
+     * Cleans up UI elements and any pending timers.
      */
     destroy() {
         console.log(`Destroying RecipeUI (${this.uiId})...`);
+        // Clear any pending timers
+        if (this.failureTimer) {
+            this.failureTimer.remove();
+            this.failureTimer = null;
+        }
+         // Clear completion timer if wok is destroyed mid-delay (less common)
+        // This requires tracking the completion timer if you implement it.
+
+        // Destroy UI elements
         this.uiElements.forEach(element => {
             element.image.destroy();
             if (element.border) element.border.destroy();
         });
         this.uiElements = [];
         this.currentRecipe = [];
+
         // Clear references
         this.scene = null;
         this.itemTextures = null;

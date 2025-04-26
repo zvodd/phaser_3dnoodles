@@ -75,12 +75,15 @@ export default class Player {
         // Setup raycaster relative to the player object
         this.rayJump = this.third.physics.add.raycaster('allHit');
 
+        const color = new THREE.Color().setHex( 0xFFE535 )
+
         this.playerObject.traverse(child => {
             if (child.isMesh) {
                 child.castShadow = true;
                 if (child.material) {
                     child.material.metalness = 0.1;
                     child.material.roughness = 0.8;
+                    child.material.color = color;
                 }
             }
         });

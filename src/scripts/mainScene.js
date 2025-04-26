@@ -159,7 +159,7 @@ export default class MainScene extends Scene3D {
 
 
         // --- Create Woks ---
-        const wokAnimation = { range: 15, duration: 5000 };
+        const wokAnimation = { range: 6, duration: 5000 };
 
         this.wokL = new Wok(
             this,
