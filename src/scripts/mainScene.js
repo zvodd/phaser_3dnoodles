@@ -86,7 +86,7 @@ export default class MainScene extends Scene3D {
         this.third.renderer.shadowMap.type = PCFSoftShadowMap;
 
         // Instantiate UI Components
-        CreateDebugButton(this);
+        //CreateDebugButton(this);
         this.helpOverlay = new HelpOverlay(this);
 
         // Instantiate Platform Component
