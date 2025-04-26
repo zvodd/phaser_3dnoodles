@@ -7,6 +7,7 @@ import HelpOverlay from './HelpOverlay.js';
 import Cannon from './Cannon.js';
 import Platform from './Platform.js';
 import Player from './Player.js';
+import Wok from './Wok.js';
 
 export default class MainScene extends Scene3D {
     constructor() {
@@ -86,7 +87,7 @@ export default class MainScene extends Scene3D {
         this.third.renderer.shadowMap.type = PCFSoftShadowMap;
 
         // Instantiate UI Components
-        //CreateDebugButton(this);
+        CreateDebugButton(this);
         this.helpOverlay = new HelpOverlay(this);
 
         // Instantiate Platform Component
@@ -102,6 +103,8 @@ export default class MainScene extends Scene3D {
 
         // Create Other Game Objects
         this.cannon = new Cannon(this);
+        this.wokL = new Wok(this, new Vector3(-15,0,0));
+        this.wokR = new Wok(this, new Vector3(15,0,0));
         this.createDeathPlane();
 
         // --- Instantiate Player Component ---
@@ -202,6 +205,9 @@ export default class MainScene extends Scene3D {
         // this.itemManager?.update(time, delta);
 
         // Cannon update is handled by its internal tween
+
+        this.wokR.update()
+        this.wokL.update()
     }
 
     /**
@@ -226,3 +232,4 @@ export default class MainScene extends Scene3D {
         this.deathPlane = null;
     }
 }
+
