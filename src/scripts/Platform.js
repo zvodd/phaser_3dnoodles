@@ -96,13 +96,14 @@ export default class Platform {
      * (Logic copied directly from MainScene's updatePlatformTilt)
      * @param {ExtendedObject3D | null} player The player object, or null if not available.
      */
-    update(playerPosition, playerIsOnPlatform) {
+    update(player) {
         //if (!this.platformObject || !this.physicsBody || !player) return; // Need player for this logic
 
         let targetTiltX = 0;
         let targetTiltZ = 0;
         // Use the exact check from the provided MainScene.js updatePlatformTilt
-        //let playerIsOnPlatform = player.isGrounded;
+        let playerIsOnPlatform = player.userData.isGrounded
+
 
         // Original check for player position relative to platform (from MainScene.js) - kept for reference but not used by playerIsOnPlatform check
         // const playerPos = player.position;
@@ -110,7 +111,7 @@ export default class Platform {
         // const platformRadiusSq = 5.5 * 5.5;
 
         if (playerIsOnPlatform) {
-            const localPlayerPos = this.platformObject.worldToLocal(playerPosition.clone());//player.position.clone());
+            const localPlayerPos = this.platformObject.worldToLocal(player.position.clone());
             targetTiltX = localPlayerPos.z;
             targetTiltZ = -localPlayerPos.x;
         }

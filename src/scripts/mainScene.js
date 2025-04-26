@@ -180,7 +180,7 @@ export default class MainScene extends Scene3D {
 
         // --- Update Platform Component ---
         // Pass the player's Object3D to the platform's update method
-        this.platformComponent?.update(this.player.position, this.player.isGrounded);
+        this.platformComponent?.update(this.player);
 
         // Update Item Manager (optional)
         // this.itemManager?.update(time, delta);
