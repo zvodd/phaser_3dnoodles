@@ -71,9 +71,9 @@ export default class Platform {
      */
     _createPhysicsBody() {
         if (!this.platformObject) return;
-
+        // possible complexShapes::  ['plane', 'hull', 'hacd', 'vhacd', 'convexMesh', 'concaveMesh'];
         this.scene.third.physics.add.existing(this.platformObject, {
-            shape: 'hull',
+            shape: 'hacd',
             mesh: this.platformObject,
             mass: 0,             // Original setting
             collisionFlags: 2,   // Original setting: CF_KINEMATIC_OBJECT

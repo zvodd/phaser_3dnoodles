@@ -31,7 +31,7 @@ export default class MainScene extends Scene3D {
         // Assets
         this.itemTypes = ['noodles', 'leek', 'garlic', 'prawn'];
         this.itemTextures = {};
-        this.modelNames = ["smooth_flat_disc", "boxboard", "box_man", "cannon", "wok"];
+        this.modelNames = ["smooth_curved_disc", "boxboard", "box_man", "cannon", "wok"];
         this.models = {};
 
         // --- Store original platform physics config to pass to the component ---
@@ -46,7 +46,7 @@ export default class MainScene extends Scene3D {
 
     preload() {
         console.log("Preloading assets...");
-        // Ensure 'smooth_flat_disc' is loaded
+        // Ensure 'smooth_curved_disc' is loaded
         const modelPromises = this.modelNames.map(name => {
             return this.third.load.gltf(`assets/${name}.glb`).then(gltf => {
                 this.models[name] = gltf;
@@ -73,8 +73,8 @@ export default class MainScene extends Scene3D {
                  throw new Error(`Asset loading incomplete. Models: ${loadedModels}/${this.modelNames.length}, Textures: ${loadedTextures}/${this.itemTypes.length}`);
             }
             // Specifically check platform model
-            if (!this.models['smooth_flat_disc']) {
-                console.warn("Platform model ('smooth_flat_disc') failed to load. Platform may use fallback.");
+            if (!this.models['smooth_curved_disc']) {
+                console.warn("Platform model ('smooth_curved_disc') failed to load. Platform may use fallback.");
             }
             console.log("Assets loaded successfully.");
         } catch (error) {
@@ -104,7 +104,7 @@ export default class MainScene extends Scene3D {
         // --- Instantiate Platform Component ---
         this.platformComponent = new Platform(
             this,
-            this.models['smooth_flat_disc'],
+            this.models['smooth_curved_disc'],
             this.platformPhysicsConfig
         );
         this.platform = this.platformComponent.getObject3D(); // Get reference to the Object3D
