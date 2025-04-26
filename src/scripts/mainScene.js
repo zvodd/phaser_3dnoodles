@@ -139,6 +139,14 @@ export default class MainScene extends Scene3D {
             // else if (otherObject.userData?.isPlayer) { /* Handle player falling */ }
         });
 
+
+        this.time.addEvent({
+            delay: 3000,
+            callback:()=>{ this.cannon.fire();},
+            callbackScope: this.itemManager,
+            loop: true
+        });
+
         this.isPlaying = true;
         console.log("Scene Created.");
 
