@@ -1,13 +1,9 @@
 // src/MainScene.js
-import {
-    Scene3D,
-    ExtendedObject3D
-} from '@enable3d/phaser-extension';
-import { Vector3, MathUtils, PCFSoftShadowMap} from 'three';
+import { Scene3D, ExtendedObject3D } from '@enable3d/phaser-extension';
+import { Vector3, MathUtils, PCFSoftShadowMap } from 'three';
 import CreatePlayer from './CreatePlayer.js';
 import CreateDebugButton from './DebugButton.js';
-// No longer need CreateBillboardMaterial here, it's used by the manager
-import BillboardItemManager from './BillboardItemManager.js'; // Import the new manager
+import BillboardItemManager from './BillboardItemManager.js';
 
 export default class MainScene extends Scene3D {
     constructor() {
@@ -23,141 +19,128 @@ export default class MainScene extends Scene3D {
         this.joystick = null;
         this.platform = null;
         this.deathPlane = null;
-
-        // --- Item Management Handled by BillboardItemManager ---
         this.itemManager = null;
-        // Store asset loading info
-        this.itemTypes = ['noodles', 'leek', 'garlic', 'prawn']; // Still needed for loading path
-        this.itemTextures = {}; // To store loaded textures
-        this.modelNames = ["smooth_flat_disc", "boxboard", "box_man", "cannon", "wok"]; // Include "boxboard"
-        this.modelGltf = {};
+
+        // Assets
+        this.itemTypes = ['noodles', 'leek', 'garlic', 'prawn'];
+        this.itemTextures = {};
+        this.modelNames = ["smooth_flat_disc", "boxboard", "box_man", "cannon", "wok"];
+        this.models = {};
+
+        // Platform Physics (Manual)
+        this.platformTilt = { x: 0, z: 0 };
+        this.platformTiltVelocity = { x: 0, z: 0 };
+        this.platformTiltDamping = 0.95;     // Friction/drag on tilt speed
+        this.platformPlayerInfluence = 0.0006; // How much player position affects velocity
+        this.platformReturnForce = 0.003;    // How strongly it returns to level
+        this.platformMaxTilt = Math.PI / 11; // Max angle
+        this.platformMaxTiltVelocity = 0.05; // Max speed of tilting
     }
 
     preload() {
-        // --- Load Models ---
-        let modelsToLoad = this.modelNames
+        console.log("Preloading assets...");
 
-        let modelPromises = modelsToLoad.map(name => {
+        const modelPromises = this.modelNames.map(name => {
             return this.third.load.gltf(`assets/${name}.glb`).then(gltf => {
-                this.modelGltf[name] = gltf;
-                console.log(`Loaded model: ${name}`);
+                this.models[name] = gltf; // Store in this.models
+                // console.log(`Loaded model: ${name}`);
             }).catch(error => console.error(`Failed to load ${name} GLB:`, error));
         });
 
-        // --- Load Item Textures ---
-        let texturePromises = this.itemTypes.map(type => {
+        const texturePromises = this.itemTypes.map(type => {
             const texturePath = `assets/img/${type}.png`;
             return this.third.load.texture(texturePath).then(texture => {
                 this.itemTextures[type] = texture;
-                console.log(`Loaded texture for ${type}`);
+                // console.log(`Loaded texture for ${type}`);
             }).catch(error => console.error(`Failed to load texture ${texturePath}:`, error));
         });
 
-        // Store promises for checking in create
         this.assetLoadPromises = Promise.all([...modelPromises, ...texturePromises]);
-
-        console.log("Preloading essential assets...");
-        // Optionally preload non-essential models asynchronously without blocking 'create'
-        this.modelNames.filter(name => !modelsToLoad.includes(name)).forEach(name => {
-             this.third.load.gltf(`assets/${name}.glb`).then(gltf => {
-                 this.modelGltf[name] = gltf;
-                 console.log(`Loaded non-essential model: ${name}`);
-             }).catch(error => console.error(`Failed to load ${name} GLB:`, error));
-        });
     }
 
     async create() {
-        console.log("Waiting for essential assets...");
+        console.log("Waiting for assets...");
         try {
-            await this.assetLoadPromises; // Wait for models and textures defined in preload promises
-            console.log("Essential assets loaded.");
-            // Check if critical assets are actually present after waiting
-             if (Object.keys(this.modelGltf.length < this.modelNames.length) || Object.keys(this.itemTextures).length < this.itemTypes.length) {
-                console.error("One or more essential assets failed to load properly. Aborting scene creation.");
-                return;
+            await this.assetLoadPromises;
+
+            // Check counts
+            const loadedModels = Object.keys(this.models).length;
+            const loadedTextures = Object.keys(this.itemTextures).length;
+
+            if (loadedModels < this.modelNames.length || loadedTextures < this.itemTypes.length) {
+                 throw new Error(`Asset loading incomplete. Models: ${loadedModels}/${this.modelNames.length}, Textures: ${loadedTextures}/${this.itemTypes.length}`);
             }
+            console.log("Assets loaded successfully.");
 
         } catch (error) {
             console.error("Error during asset loading:", error);
-            // Handle error
+            // Optional: Switch to an error scene or display a message
             return;
         }
 
-        console.log("Proceeding with create...");
+        console.log("Proceeding with scene creation...");
 
-        // Basic Setup
+        // Setup Scene
         this.third.warpSpeed('camera', 'sky', 'grid', 'light');
-        this.third.renderer.setPixelRatio(window.devicePixelRatio); // Optional: improve sharpness on high DPI
+        this.third.renderer.setPixelRatio(window.devicePixelRatio);
         this.third.renderer.setSize(window.innerWidth, window.innerHeight);
         this.third.camera.aspect = window.innerWidth / window.innerHeight;
         this.third.camera.updateProjectionMatrix();
 
-        this.third.lights.directionalLight({ intensity: 0.8, castShadow: true }); // Enable shadow casting
+        this.third.lights.directionalLight({ intensity: 0.8, castShadow: true });
         this.third.lights.hemisphereLight({ intensity: 0.6 });
         this.third.camera.position.set(0, 18, 20);
         this.third.camera.lookAt(new Vector3(0, 5, 0));
+
+        // Shadows
+        this.third.renderer.shadowMap.enabled = true;
+        this.third.renderer.shadowMap.type = PCFSoftShadowMap;
+
         CreateDebugButton(this);
 
-         // Enable shadows in the renderer
-        this.third.renderer.shadowMap.enabled = true;
-        this.third.renderer.shadowMap.type = PCFSoftShadowMap; // Softer shadows
+        // Create Game Objects
+        this.createPlatform();
+        this.createDeathPlane();
 
-        // --- Create Platform ---
-        this.createPlatform(); // Encapsulated platform creation
-
-        // --- Create Player ---
         try {
-            await CreatePlayer(this); // Assuming this sets this.player and this.playerController
+            await CreatePlayer(this);
             if (!this.player) throw new Error("CreatePlayer did not set scene.player");
         } catch (error) {
             console.error("Failed to create player:", error);
-            // Handle error
             return;
         }
 
-
-        // --- Create Death Plane ---
-        this.createDeathPlane();
-
-        // --- Initialize Billboard Item Manager ---
+        // Initialize Item Manager
         this.itemManager = new BillboardItemManager(
-            this, // Pass scene reference
-            { maxItems: 50, itemTypes: this.itemTypes }, // Pass config
-            this.modelGltf,  // Pass loaded models (including 'boxboard')
-            this.itemTextures // Pass loaded item textures
+            this,
+            { maxItems: 50, itemTypes: this.itemTypes },
+            this.models,
+            this.itemTextures
         );
 
-        // --- Spawn Items Periodically ---
+        // Spawn Items Timer
         this.time.addEvent({
             delay: 2000,
-            // Use the item manager's spawn method
             callback: this.itemManager.spawnItem,
-            callbackScope: this.itemManager, // ***** SET SCOPE TO THE MANAGER *****
+            callbackScope: this.itemManager,
             loop: true
         });
 
-        // --- Setup Collision Listener for Death Plane ---
+        // Death Plane Collision
         this.deathPlane.body.on.collision((otherObject, event) => {
-            // Check if the colliding object is an item managed by our manager
             if (otherObject.userData?.isItem) {
-                 // Delegate handling to the item manager
                 this.itemManager.handleCollision(otherObject);
             }
-            // Handle player collision separately if needed
-            // else if (otherObject === this.player) { /* handle player death */ }
         });
 
         this.isPlaying = true;
-        console.log("Scene Created. Item Manager active.");
+        console.log("Scene Created.");
     }
 
-    /**
-     * Creates the tilting platform.
-     */
     createPlatform() {
-        const platformGltf = this.modelGltf["smooth_flat_disc"];
-        if (!platformGltf || !platformGltf.scene || !platformGltf.scene.children[0]) {
-            console.error("Could not find mesh inside smooth_flat_disc.glb scene. Creating fallback.");
+        const platformGltf = this.models["smooth_flat_disc"]; // Use this.models
+        if (!platformGltf?.scene?.children?.[0]) {
+            console.error("Platform model not found, using fallback.");
             this.platform = this.third.add.box({ name: 'platform_fallback', width: 10, height: 0.5, depth: 10 }, { lambert: { color: 'grey' } });
         } else {
             this.platform = platformGltf.scene.children[0].clone();
@@ -166,68 +149,51 @@ export default class MainScene extends Scene3D {
 
         this.third.add.existing(this.platform);
         this.platform.position.set(0, 5, 0);
-        this.platform.receiveShadow = true; // Allow platform to receive shadows
-        this.platform.castShadow = false;   // Platform itself likely doesn't need to cast shadows
+        this.platform.receiveShadow = true;
+        this.platform.castShadow = false;
 
-        // Ensure materials on the platform can receive shadows
         this.platform.traverse(child => {
             if (child.isMesh) {
                 child.receiveShadow = true;
             }
         });
 
-
+        // Add STATIC physics body for collision
         this.third.physics.add.existing(this.platform, {
             shape: 'hull',
-            mesh: this.platform, // Pass the mesh object for hull generation
-            mass: 0,
-            collisionFlags: 2, // Kinematic object
+            mesh: this.platform,
+            mass: 0,             // Static
+            collisionFlags: 2,   // CF_STATIC_OBJECT
             friction: 0.8,
             restitution: 0.2
         });
-        console.log("Platform created with hull shape.");
+        // Reset initial visual rotation
+        this.platform.rotation.set(0, 0, 0);
+        this.platformTilt = { x: 0, z: 0 }; // Ensure tilt state matches
+        this.platformTiltVelocity = { x: 0, z: 0 };
+        console.log("Platform created with STATIC hull shape.");
     }
 
-    /**
-     * Creates a static trigger volume below the platform.
-     */
     createDeathPlane() {
         const deathPlaneY = -10;
         const deathPlaneSize = 100;
-
-        // ExtendedObject3D for the container
-        this.deathPlane = new ExtendedObject3D(); 
+        this.deathPlane = new ExtendedObject3D();
         this.deathPlane.name = "DeathPlaneTrigger";
         this.deathPlane.position.set(0, deathPlaneY, 0);
 
         this.third.physics.add.existing(this.deathPlane, {
             shape: 'box',
-            width: deathPlaneSize,
-            height: 0.1,
-            depth: deathPlaneSize,
+            width: deathPlaneSize, height: 0.1, depth: deathPlaneSize,
             mass: 0,
-            collisionFlags: 4, // Static sensor (CF_NO_CONTACT_RESPONSE)
-            // Give it a group/mask if you want fine-grained collision control
-            // collisionGroup: 2, // Example group
-            // collisionMask: 1 // Example: Only collide with group 1 (e.g., items/player)
+            collisionFlags: 4, // CF_NO_CONTACT_RESPONSE (Sensor)
         });
-        // No need for userData here, the collision callback identifies it
-        console.log("Death Plane physics body created at y=", deathPlaneY);
     }
 
-
-    /**
-     * Method for player interaction (e.g., button press) to grab an item.
-     * This would be called from your player controller or input handler.
-     * Example: Finds the closest item and tells the manager to grab it.
-     */
     attemptToGrabItem() {
-        if (!this.player || !this.itemManager) return;
-
-        const grabRadius = 1.5; // How close the player needs to be
+        const grabRadiusSq = 1.5 * 1.5;
         const playerPos = this.player.position;
         let closestItem = null;
-        let minDistanceSq = grabRadius * grabRadius;
+        let minDistanceSq = grabRadiusSq;
 
         for (const spawnId in this.itemManager.items) {
             const item = this.itemManager.items[spawnId];
@@ -241,40 +207,90 @@ export default class MainScene extends Scene3D {
         if (closestItem) {
             const grabbedItemInfo = this.itemManager.grabItem(closestItem);
             if (grabbedItemInfo) {
-                console.log("Successfully grabbed:", grabbedItemInfo);
-                // TODO: Attach item representation to player, add to inventory, etc.
+                console.log("Grabbed:", grabbedItemInfo);
+                // TODO: Player inventory logic
             }
         } else {
-             console.log("No item within grab range.");
+            // console.log("No item in range.");
         }
     }
 
 
-    update(time, delta) {
-        if (!this.isPlaying || !this.player || !this.platform || !this.itemManager) return;
+    /**
+     * Updates the platform's tilt based on player position and simple physics.
+     */
+    updatePlatformTilt() {
+        let targetTiltX = 0;
+        let targetTiltZ = 0;
+        let playerIsOnPlatform = this.player.isGrounded;
 
-        // Update Player
-        this.playerController?.update(time, delta);
-
-        // Update Item Manager (if it needs an update loop, e.g., for manual billboarding)
-        // this.itemManager.update(time, delta);
-
-        // Tilt the Platform
-        try {
-            const localPlayerPos = this.platform.worldToLocal(this.player.position.clone());
-            const k = 0.05; // Tilt sensitivity factor
-            const maxTilt = Math.PI / 12; // Maximum tilt angle
-
-            const tiltX = -MathUtils.clamp(-k * localPlayerPos.z, -maxTilt, maxTilt);
-            const tiltZ = -MathUtils.clamp(k * localPlayerPos.x, -maxTilt, maxTilt);
-
-            // Use quaternion for smoother rotation updates if needed, but set Euler is fine too
-            this.platform.rotation.set(tiltX, 0, tiltZ);
-            this.platform.body.needUpdate = true; // IMPORTANT for kinematic physics
-
-        } catch (error) {
-             // Catch errors if player/platform don't exist momentarily during scene transitions etc.
-             // console.error("Error during platform tilt:", error);
+        // Check if player is roughly on the platform
+        if (this.player) {
+            const playerPos = this.player.position;
+            const platformPos = this.platform.position;
+            const platformRadiusSq = 5.5 * 5.5; // Slightly larger than visual radius
         }
+
+        if (playerIsOnPlatform) {
+            // Calculate target tilt angles based on player's local position
+            const localPlayerPos = this.platform.worldToLocal(this.player.position.clone());
+            // Use player position directly to influence velocity change direction
+            targetTiltX = localPlayerPos.z;
+            targetTiltZ = -localPlayerPos.x; // Sign change intentional based on axis
+        }
+        // If player is not on platform, targetTilt remains 0,0, causing it to return to level
+
+        // Calculate force towards target (influenced by player) and return force (always active)
+        // Note: targetTiltX/Z represent *direction* here, influence scales it
+        const forceX = (targetTiltX * this.platformPlayerInfluence) - (this.platformTilt.x * this.platformReturnForce);
+        const forceZ = (targetTiltZ * this.platformPlayerInfluence) - (this.platformTilt.z * this.platformReturnForce);
+
+        // Apply force to velocity
+        this.platformTiltVelocity.x += forceX;
+        this.platformTiltVelocity.z += forceZ;
+
+        // Apply damping (friction)
+        this.platformTiltVelocity.x *= this.platformTiltDamping;
+        this.platformTiltVelocity.z *= this.platformTiltDamping;
+
+        // Clamp velocity
+        this.platformTiltVelocity.x = MathUtils.clamp(this.platformTiltVelocity.x, -this.platformMaxTiltVelocity, this.platformMaxTiltVelocity);
+        this.platformTiltVelocity.z = MathUtils.clamp(this.platformTiltVelocity.z, -this.platformMaxTiltVelocity, this.platformMaxTiltVelocity);
+
+        // Update tilt angle based on velocity
+        this.platformTilt.x += this.platformTiltVelocity.x;
+        this.platformTilt.z += this.platformTiltVelocity.z;
+
+        // Clamp final tilt angle
+        this.platformTilt.x = MathUtils.clamp(this.platformTilt.x, -this.platformMaxTilt, this.platformMaxTilt);
+        this.platformTilt.z = MathUtils.clamp(this.platformTilt.z, -this.platformMaxTilt, this.platformMaxTilt);
+
+        // Apply the calculated tilt to the visual object
+        this.platform.rotation.set(this.platformTilt.x, 0, this.platformTilt.z);
+
+        this.platform.body.needUpdate = true; // IMPORTANT for kinematic physics
+    }
+
+
+    update(time, delta) {
+        if (!this.isPlaying) return;
+
+        // Update Player (needs player object)
+        if (this.playerController) {
+             this.playerController.update(time, delta);
+        } else if (this.player) {
+             // Basic failsafe if controller missing but player exists
+             // console.warn("Player controller missing in update loop");
+        }
+
+
+        // Update Platform Tilt (needs platform object)
+        if (this.platform) {
+            this.updatePlatformTilt(); // Call the dedicated tilt update function
+        }
+
+        // Update Item Manager (optional, if manager needs updates)
+        // this.itemManager?.update(time, delta);
+
     }
 }

@@ -15,7 +15,7 @@ const isTouchDevice = 'ontouchstart' in window;
  */
 export default function CreatePlayer(scene){
     // **Create the Player**
-      const object = scene.modelGltf['box_man']
+      const object = scene.models['box_man']
       const man = object.scene.children[0];
       scene.player = new ExtendedObject3D(); // Assign to scene property
       scene.player.name = 'man';
@@ -27,7 +27,7 @@ export default function CreatePlayer(scene){
 
       scene.player.traverse(child => {
         if (child.isMesh) {
-          child.castShadow = child.receiveShadow = true;
+          child.castShadow = true;
           // Improve appearance slightly
           if (child.material) {
            child.material.metalness = 0.1;

@@ -12,7 +12,8 @@ export default class PlayerController {
     this.third = scene.third;
     this.player = player;
     this.joystick = joystick; // Pass joystick if available
-
+    
+    this.isGrounded = false
     this.canJump = true;
     this.isJumping = false;
     this.moveSpeed = 4;
@@ -66,26 +67,7 @@ export default class PlayerController {
    */
   jump() {
     if (!this.player?.body || !this.canJump) return;
-
-    // Simple ground check (replace with raycast later if needed for slopes/uneven ground)
-    // Check if vertical velocity is near zero, indicating potential ground contact
-    const raycaster = this.player.rayJump
-    const pos = this.player.position
-
-    raycaster.setRayFromWorld(pos.x, pos.y + 1, pos.z)
-    raycaster.setRayToWorld(pos.x, pos.y -0.1, pos.z)
-    raycaster.rayTest()
-
-    // if (raycaster.hasHit()) {
-    //     const [points, objects] = [raycaster.getHitPointsWorld(), raycaster.getCollisionObjects()]
-    //     for (let i = 0 ; i < points.length; i++){
-    //         const { x, y, z } = points[i]
-    //         const { name } = objects[i]
-    //         console.log('rayhit:', `${name}:`, `x:${x.toFixed(2)}`, `y:${x.toFixed(2)}`, `z:${x.toFixed(2)}`)
-    //     }
-    // }
-
-    if (raycaster.hasHit()) {
+    if (this.player.isGrounded) {
         this.canJump = false;
         this.isJumping = true;
         this.player.anims?.play('jump_running', 50, false); // Play jump anim once
@@ -122,7 +104,7 @@ export default class PlayerController {
     let closestGrabbableSphere = null;
     let minDistanceSq = grabRange * grabRange;
 
-    for (const sphere of Object.values(this.itemManager.items)) {
+    for (const sphere of Object.values(this.scene.itemManager.items)) {
         const spherePos = sphere.position;
         const vectorToSphere = spherePos.clone().sub(playerPos);
         const distanceSq = vectorToSphere.lengthSq();
@@ -144,7 +126,7 @@ export default class PlayerController {
 
     // If a grabbable sphere was found, trigger the grab action
     if (closestGrabbableSphere) {
-        this.scene.grabItem(this.player, closestGrabbableSphere);
+        this.scene.attemptToGrabItem(this.player, closestGrabbableSphere);
     } else {
       console.log("No sphere in range/view to grab.");
     }
@@ -159,6 +141,19 @@ export default class PlayerController {
    */
   update(time, delta) {
     if (!this.player?.body) return; // Player not fully loaded yet
+
+    // ground check
+
+
+
+    // Simple ground check (replace with raycast later if needed for slopes/uneven ground)
+    // Check if vertical velocity is near zero, indicating potential ground contact
+    const raycaster = this.player.rayJump
+    const pos = this.player.position
+    raycaster.setRayFromWorld(pos.x, pos.y + 1, pos.z)
+    raycaster.setRayToWorld(pos.x, pos.y -0.1, pos.z)
+    raycaster.rayTest()
+    this.player.isGrounded = raycaster.hasHit()
 
     // --- Read Keyboard Input ---
     if (!isTouchDevice) {

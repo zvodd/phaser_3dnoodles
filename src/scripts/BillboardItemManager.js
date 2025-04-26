@@ -1,5 +1,6 @@
 // src/BillboardItemManager.js
 import { THREE, ExtendedObject3D } from '@enable3d/phaser-extension';
+import { SphereGeometry, ShadowMaterial, MeshBasicMaterial, Mesh } from 'three';
 import CreateBillboardMaterial from './billboard_material.js'; // Assuming this path is correct
 
 export default class BillboardItemManager {
@@ -22,8 +23,8 @@ export default class BillboardItemManager {
         this.spawnCount = 0;
 
         // Pre-create shadow geometry/material for efficiency
-        this.shadowSphereGeometry = new THREE.SphereGeometry(0.3, 16, 8); // Match physics radius ideally
-        this.shadowMaterial = new THREE.ShadowMaterial({ opacity: 0.7 }); // Specific material for shadows
+        this.shadowSphereGeometry = new SphereGeometry(0.3, 16, 8); // Match physics radius ideally
+        this.shadowMaterial = new ShadowMaterial({ opacity: 0.7 }); // Specific material for shadows
     }
 
     /**
@@ -70,12 +71,12 @@ export default class BillboardItemManager {
         } else {
              console.error("Could not find mesh or material in boxboard model");
              // Fallback or skip adding mesh
-             billboardMesh.material = new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true }); // Error indicator
+             billboardMesh.material = new MeshBasicMaterial({ color: 0xff00ff, wireframe: true }); // Error indicator
         }
         itemContainer.add(billboardMesh);
 
         // --- Create Shadow Sphere ---
-        const shadowSphere = new THREE.Mesh(this.shadowSphereGeometry, this.shadowMaterial);
+        const shadowSphere = new Mesh(this.shadowSphereGeometry, this.shadowMaterial);
         shadowSphere.name = `item_shadow_${spawnId}`;
         shadowSphere.castShadow = true;      // This sphere casts the shadow
         shadowSphere.receiveShadow = false; // Doesn't need to receive shadows
