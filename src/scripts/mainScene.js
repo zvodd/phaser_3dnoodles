@@ -8,6 +8,7 @@ import Cannon from './Cannon.js';
 import Platform from './Platform.js';
 import Player from './Player.js';
 import Wok from './Wok.js';
+import RecipeUI from './RecipeUI.js';
 
 export default class MainScene extends Scene3D {
     constructor() {
@@ -71,6 +72,21 @@ export default class MainScene extends Scene3D {
             return;
         }
 
+        console.log("Registering item textures with Phaser...");
+        this.itemTypes.forEach(type => {
+            const threeTexture = this.itemTextures[type];
+            // Check if it's a valid THREE.Texture with an image source
+            if (threeTexture && threeTexture.image && threeTexture.image.src) {
+                // Use the item type name as the key for the Phaser texture
+                if (!this.textures.exists(type)) { // Avoid re-adding
+                     this.textures.addImage(type, threeTexture.image);
+                     console.log(`Registered Phaser texture: ${type}`);
+                }
+            } else {
+                console.warn(`Could not register texture for type: ${type}. Invalid texture data.`);
+            }
+        });
+
         console.log("Proceeding with scene creation...");
 
         // Setup Scene, Lights, Camera, Shadows...
@@ -103,9 +119,64 @@ export default class MainScene extends Scene3D {
 
         // Create Other Game Objects
         this.cannon = new Cannon(this);
-        this.wokL = new Wok(this, new Vector3(-15,0,0));
-        this.wokR = new Wok(this, new Vector3(15,0,0));
         this.createDeathPlane();
+
+        const recipeUiConfig = {
+            minItems: 2,
+            maxItems: 3,
+            imageSize: 40, // Adjust size
+            spacing: 8,
+            borderThickness: 2
+        };
+
+        // Position the UIs (adjust x, y coordinates)
+        const leftUiX = 50;
+        const leftUiY = 50;
+        const rightUiX = this.scale.width - (recipeUiConfig.maxItems * (recipeUiConfig.imageSize + recipeUiConfig.spacing)) - 50; // Estimate width
+        const rightUiY = 50;
+
+        this.leftRecipeUI = new RecipeUI(
+            this,
+            'leftWokUI',
+            leftUiX, leftUiY,
+            this.itemTypes,
+            this.itemTextures, // Pass the loaded THREE textures (adapter assumes registration)
+            recipeUiConfig,
+            this.handleRecipeComplete.bind(this), // Bind 'this' context
+            this.handleRecipeFailure.bind(this)   // Bind 'this' context
+        );
+
+        this.rightRecipeUI = new RecipeUI(
+            this,
+            'rightWokUI',
+            rightUiX, rightUiY,
+            this.itemTypes,
+            this.itemTextures,
+            recipeUiConfig,
+            this.handleRecipeComplete.bind(this),
+            this.handleRecipeFailure.bind(this)
+        );
+
+
+        // --- Create Woks ---
+        const wokAnimation = { range: 15, duration: 5000 };
+
+        this.wokL = new Wok(
+            this,
+            'leftWok',
+            this.leftRecipeUI, // Pass the RecipeUI instance
+            new Vector3(-15, 0, 0),
+            wokAnimation
+        );
+
+        this.wokR = new Wok(
+            this,
+            'rightWok',
+            this.rightRecipeUI, // Pass the RecipeUI instance
+            new Vector3(15, 0, 0),
+            wokAnimation
+        );
+
 
         // --- Instantiate Player Component ---
         // Pass the scene and the loaded player model data
@@ -188,6 +259,19 @@ export default class MainScene extends Scene3D {
             mass: 0,
             collisionFlags: 4, // Sensor
         });
+    }
+
+        // In MainScene class (outside methods or within init/create)
+    handleRecipeComplete(uiId) {
+        console.log(`SCENE: Recipe Complete for ${uiId}!`);
+        // TODO: Add score, play success sound/animation
+        // Example: this.score += 100; this.scoreText.setText('Score: ' + this.score);
+    }
+
+    handleRecipeFailure(uiId, neededItem, receivedItem) {
+        console.log(`SCENE: Recipe Failure for ${uiId}! Needed ${neededItem}, got ${receivedItem}`);
+        // TODO: Remove player heart, play failure sound/animation
+        // Example: this.lives--; this.livesText.setText('Lives: ' + this.lives);
     }
 
 
