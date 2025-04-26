@@ -164,22 +164,9 @@ export default class BillboardItemManager {
 
     /**
      * Update loop for the item manager (e.g., for custom animations or logic).
-     * Currently not used for billboarding if CreateBillboardMaterial handles it.
+     * Currently not used for billboarding as CreateBillboardMaterial handles it.
      * @param {number} time The current time.
      * @param {number} delta The delta time in ms.
      */
-    update(time, delta) {
-        // If CreateBillboardMaterial doesn't handle billboarding automatically,
-        // you would iterate through this.items here and make each billboardMesh
-        // face the camera using lookAt or quaternion manipulation.
-        // Example (if needed):
-        // const cameraPosition = this.scene.third.camera.position;
-        // for (const spawnId in this.items) {
-        //     const item = this.items[spawnId];
-        //     const billboardMesh = item.children[0]; // Assuming billboard is the first child
-        //     if (billboardMesh) {
-        //         billboardMesh.lookAt(cameraPosition);
-        //     }
-        // }
-    }
+    // update(time, delta) {}
 }
