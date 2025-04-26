@@ -4,6 +4,8 @@ import { Vector3, MathUtils, PCFSoftShadowMap } from 'three';
 import CreatePlayer from './CreatePlayer.js';
 import CreateDebugButton from './DebugButton.js';
 import BillboardItemManager from './BillboardItemManager.js';
+import HelpOverlay from './HelpOverlay.js'; // <-- Import the new component
+
 
 export default class MainScene extends Scene3D {
     constructor() {
@@ -97,6 +99,7 @@ export default class MainScene extends Scene3D {
         this.third.renderer.shadowMap.type = PCFSoftShadowMap;
 
         CreateDebugButton(this);
+        this.helpOverlay = new HelpOverlay(this);
 
         // Create Game Objects
         this.createPlatform();
