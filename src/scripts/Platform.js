@@ -14,11 +14,10 @@ export default class Platform {
      * @param {number} config.maxVelocity Maximum tilt velocity.
      * @param {THREE.Vector3} [position=new THREE.Vector3(0, 5, 0)] Initial position.
      */
-    constructor(scene, platformGltf, config, position = new THREE.Vector3(0, 5, 0)) {
+    constructor(scene, platformGltf, position = new THREE.Vector3(0, 5, 0)) {
         this.scene = scene;
         this.platformObject = null; // The visual THREE.Object3D
         this.physicsBody = null;    // The Ammo physics body wrapper
-        this.config = config;       // Store the passed-in config directly
 
         // --- State ---
         // Initialize state exactly as it was in MainScene.init
@@ -35,6 +34,14 @@ export default class Platform {
             this.tilt = { x: 0, z: 0 };
             this.tiltVelocity = { x: 0, z: 0 };
         }
+
+        this.config = {
+            damping: 0.95,
+            playerInfluence: 0.0006,
+            returnForce: 0.003,
+            maxTilt: Math.PI / 11,
+            maxVelocity: 0.05
+        };
     }
 
     /**
@@ -73,12 +80,12 @@ export default class Platform {
         if (!this.platformObject) return;
         // possible complexShapes::  ['plane', 'hull', 'hacd', 'vhacd', 'convexMesh', 'concaveMesh'];
         this.scene.third.physics.add.existing(this.platformObject, {
-            shape: 'hacd',
+            shape: 'hull', 
             mesh: this.platformObject,
-            mass: 0,             // Original setting
-            collisionFlags: 2,   // Original setting: CF_KINEMATIC_OBJECT
-            friction: 0.8,       // Original setting
-            restitution: 0.2     // Original setting
+            mass: 0,
+            collisionFlags: 2,
+            friction: 0.8,
+            restitution: 0.2
         });
         this.physicsBody = this.platformObject.body;
         console.log("Platform created with KINEMATIC hull shape (original settings).");
