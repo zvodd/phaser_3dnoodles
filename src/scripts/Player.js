@@ -234,6 +234,32 @@ export default class Player {
     }
 
     /**
+     * Resets the player's position and velocity.
+     * Typically called after falling off the platform.
+     * @param {THREE.Vector3} targetPosition The position to reset the player to.
+     */
+    resetPosition(targetPosition) {
+        if (!this.physicsBody) return;
+
+        console.log(`Resetting player position to: ${targetPosition.x}, ${targetPosition.y}, ${targetPosition.z}`);
+        // Directly set the physics body's position
+        this.physicsBody.setCollisionFlags(2); // Temporarily make kinematic
+        this.physicsBody.setPosition(targetPosition);
+        this.physicsBody.setVelocity(0, 0, 0); // Reset velocity
+        this.physicsBody.setAngularVelocity(0, 0, 0); // Reset angular velocity
+        this.physicsBody.setCollisionFlags(0); // Set back to dynamic
+        
+        // Also update the visual object's position immediately
+        if (this.playerObject) {
+            this.playerObject.position.copy(targetPosition);
+            this.playerObject.rotation.set(0, 0, 0); // Reset rotation if needed
+        }
+        this.isGrounded = false; // Assume not grounded immediately after reset
+        this.physicsBody.needUpdate = true;
+    }
+
+
+    /**
      * Main update loop for the player.
      * @param {number} time Current time.
      * @param {number} delta Time since last frame (ms).

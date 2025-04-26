@@ -131,7 +131,7 @@ export default class Cannon {
             this.tween = null;
         }
         if (this.cannonObject && this.cannonObject.parent) {
-            this.scene.third.destroy(this.cannonObject);
+          //  this.scene.third.destroy(this.cannonObject);
         }
         this.cannonObject = null;
         this.scene = null;
