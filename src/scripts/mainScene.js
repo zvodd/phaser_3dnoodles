@@ -158,7 +158,8 @@ export default class MainScene extends Scene3D {
             console.log("Restarting scene now.");
             // Clear the timer reference before restarting
             this.restartDelayTimer = null;
-            // this.scene.restart(); // Restart the current scene
+            //this.scene.start('PreloadScene')
+            //this.scene.restart(); // Restart the current scene
         }, [], this);
 
         // TODO: Add other game over logic (disable input etc.)

@@ -122,18 +122,7 @@ export default class Cannon {
     }
 
     /**
-     * Cleans up the cannon object and its animation.
+     * There is RARELY a reason to implement cleanup in javascript.
      */
-    destroy() {
-        console.log("Destroying Cannon...");
-        if (this.tween) {
-            this.tween.stop();
-            this.tween = null;
-        }
-        if (this.cannonObject && this.cannonObject.parent) {
-          //  this.scene.third.destroy(this.cannonObject);
-        }
-        this.cannonObject = null;
-        this.scene = null;
-    }
+    destroy() { }
 }

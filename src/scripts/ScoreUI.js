@@ -141,18 +141,7 @@ export default class ScoreUI {
     }
 
     /**
-     * Cleans up the UI text elements.
+     * There is RARELY a reason to implement cleanup in javascript.
      */
-    destroy() {
-        console.log("Destroying ScoreUI...");
-        if (this.scoreText) {
-            this.scoreText.destroy();
-            this.scoreText = null;
-        }
-        if (this.livesText) {
-            this.livesText.destroy();
-            this.livesText = null;
-        }
-        this.scene = null; // Release scene reference
-    }
+    destroy() { }
 }

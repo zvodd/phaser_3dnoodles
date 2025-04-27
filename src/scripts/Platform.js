@@ -34,7 +34,7 @@ export default class Platform {
         const defaults = {
             damping: 0.95,
             playerInfluence: 0.0006,
-            cannonballInfluence: 0.0009, // Default influence for cannonballs
+            cannonballInfluence: 0.0003, // Default influence for cannonballs
             returnForce: 0.003,
             maxTilt: Math.PI / 11,
             maxVelocity: 0.05
@@ -187,19 +187,8 @@ export default class Platform {
         return this.platformObject;
     }
 
-    /** Cleans up the platform object and physics body. */
-    destroy() {
-        console.log("Destroying Platform...");
-        if (this.platformObject) {
-             if (this.physicsBody) {
-                 this.scene.third.physics.destroy(this.platformObject);
-                 this.physicsBody = null;
-             }
-             if (this.platformObject.parent) {
-                 this.scene.third.destroy(this.platformObject);
-             }
-        }
-        this.platformObject = null;
-        this.scene = null;
-    }
+    /**
+     * There is RARELY a reason to implement cleanup in javascript.
+     */
+    destroy() { }
 }

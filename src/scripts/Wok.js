@@ -196,33 +196,7 @@ export default class Wok {
     }
 
     /**
-     * Cleans up the wok object, its physics body, animation tween,
-     * and triggers the destruction of the associated RecipeUI.
+     * There is RARELY a reason to implement cleanup in javascript.
      */
-    destroy() {
-        console.log(`Destroying Wok (${this.wokId})...`);
-        // Stop the animation tween
-        if (this.tween) {
-            this.tween.stop();
-            this.tween = null;
-        }
-        // Destroy the physics body *before* the visual object
-        // Use the Enable3D physics destroy method
-        if (this.physicsBody) {
-            this.scene.third.physics.destroy(this.wokObject); // This removes the body
-            this.physicsBody = null;
-        }
-        // Destroy the visual THREE.Object3D
-        if (this.wokObject) {
-            this.scene.third.destroy(this.wokObject); // This cleans up geometry/material
-            this.wokObject = null;
-        }
-        // Destroy the associated RecipeUI instance
-        if (this.recipeUI) {
-            this.recipeUI.destroy();
-            this.recipeUI = null;
-        }
-        // Clear references to prevent memory leaks
-        this.scene = null;
-    }
+    destroy() { }
 }

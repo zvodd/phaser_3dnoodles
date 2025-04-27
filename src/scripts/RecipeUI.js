@@ -238,30 +238,7 @@ export default class RecipeUI {
 
 
     /**
-     * Cleans up UI elements and any pending timers.
+     * There is RARELY a reason to implement cleanup in javascript.
      */
-    destroy() {
-        console.log(`Destroying RecipeUI (${this.uiId})...`);
-        // Clear any pending timers
-        if (this.failureTimer) {
-            this.failureTimer.remove();
-            this.failureTimer = null;
-        }
-         // Clear completion timer if wok is destroyed mid-delay (less common)
-        // This requires tracking the completion timer if you implement it.
-
-        // Destroy UI elements
-        this.uiElements.forEach(element => {
-            element.image.destroy();
-            if (element.border) element.border.destroy();
-        });
-        this.uiElements = [];
-        this.currentRecipe = [];
-
-        // Clear references
-        this.scene = null;
-        this.itemTextures = null;
-        this.onComplete = null;
-        this.onFailure = null;
-    }
+    destroy() { }
 }

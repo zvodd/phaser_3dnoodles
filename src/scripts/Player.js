@@ -248,7 +248,7 @@ export default class Player {
         this.physicsBody.setVelocity(0, 0, 0); // Reset velocity
         this.physicsBody.setAngularVelocity(0, 0, 0); // Reset angular velocity
         this.physicsBody.setCollisionFlags(0); // Set back to dynamic
-        
+
         // Also update the visual object's position immediately
         if (this.playerObject) {
             this.playerObject.position.copy(targetPosition);
@@ -368,30 +368,7 @@ export default class Player {
     }
 
     /**
-     * Cleans up resources used by the player.
+     * There is RARELY a reason to implement cleanup in javascript.
      */
-    destroy() {
-        console.log("Destroying Player...");
-        if (this.playerObject) {
-            if (this.physicsBody) {
-                this.third.physics.destroy(this.playerObject); // Destroy physics body via object
-                this.physicsBody = null;
-            }
-            if (this.playerObject.parent) {
-                this.third.destroy(this.playerObject); // Destroy visual object
-            }
-        }
-        this.playerObject = null;
-        this.rayJump = null; // Raycaster is managed by physics engine, just clear ref
-
-        // Clean up joystick if it exists
-        if (this.joystick) {
-            this.joystick.destroy();
-            this.joystick = null;
-        }
-
-        // Remove keyboard listeners? (Phaser might handle this on scene shutdown)
-        this.keys = null;
-        this.scene = null; // Release scene reference
-    }
+    destroy() { }
 }

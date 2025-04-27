@@ -109,19 +109,11 @@ export default class HelpOverlay {
     }
 
     /**
-     * Cleans up the text object and input listener. Call this when the scene shuts down.
+     * There is RARELY a reason to implement cleanup in javascript.
      */
     destroy() {
-        console.log("Destroying Help Overlay...");
-        if (this.textObject) {
-            this.scene.tweens.killTweensOf(this.textObject); // Stop animations
-            this.textObject.destroy(); // Remove text object from scene
-            this.textObject = null;
-        }
         if (this.keyListener) {
             this.scene.input.keyboard.off(`keydown-${this.toggleKey}`, this.keyListener);
-            this.keyListener = null;
         }
-        this.scene = null; // Release scene reference
     }
 }
