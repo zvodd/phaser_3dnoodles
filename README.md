@@ -1,36 +1,59 @@
-<h1 align="center">
-  <br>
-  Phaser 3 + enable3d
-  <br>
-</h1>
+# Cannon Ball Wok
 
-## About
+Cannon Ball Wok is a fast-paced 3D physics game created in about 5 days for the **Gamedev.js Jam 2025** (April 13th - 26th). The theme for the jam was **Balance**.
 
-This is a clone of the popular [phaser-project-template](https://github.com/yandeu/phaser-project-template), which includes the latest enable3d.io version.
+Play [Cannon Ball Wok on itch.io](https://o0ddity.itch.io/cannon-ball-wok)!
 
-## How to use
+## Gameplay
 
-```console
-# Clone this repository
-$ git clone --depth 1 https://github.com/enable3d/enable3d-phaser-project-template.git enable3d-game
+In Cannon Ball Wok, you control a character desperately trying to cook while standing on a large, tilting disc. A cannon periodically fires heavy cannonballs at the disc, and each impact sends it rocking!
 
-# Go into the repository
-$ cd enable3d-game
+Ingredients rain down from above. Your objective is to run around the unstable platform, using its ever-shifting **balance** to slide the falling ingredients into one of the two woks positioned nearby.
 
-# Install dependencies
-$ npm install
+Each wok requires a specific sequence of ingredients for its current recipe. Successfully adding the correct ingredient scores points. However, if the wrong ingredient falls into a wok, you lose a heart, and that wok gets a new, random recipe. Stay balanced and cook quickly before you run out of lives!
 
-# Start the local development server (on port 8080)
-$ npm start
+## Technology Stack
 
-# Ready for production?
-# Build the production ready code to the /dist folder
-$ npm run build
-```
+This game was built using:
 
-## JavaScript
+* **Phaser 3:** A popular and feature-rich HTML5 game framework. Chosen specifically to participate in the "Build it with Phaser" challenge.
+* **Enable3D:** A plugin for Phaser that simplifies integrating 3D graphics and physics. It acts as a wrapper around:
+    * **Three.js:** For 3D rendering.
+    * **Ammo.js:** A JavaScript port of the Bullet physics engine, used here to simulate the tilting platform, cannonball impacts, and sliding ingredients, directly tying into the jam's **Balance** theme.
 
-You want to use JavaScript instead of TypeScript?
+Initially cloned from the Enable3D [phaser-project-template](https://github.com/yandeu/phaser-project-template), which includes the latest enable3d.io version.
 
-- Add `"checkJs": false,` to [tsconfig.json](./tsconfig.json)
-- Change the extension of all game files in [/src/scripts](./src/scripts) from `.ts` to `.js` (except `game.ts`).
+This stack allowed for rapid 3D development within the Phaser ecosystem, ideal for the game jam's timeframe.
+
+## Gamedev.js Jam 2025 Participation
+
+This project was created for and submitted to the Gamedev.js Jam 2025, participating in the following challenges:
+
+* **Build it with Phaser:** Developed using the Phaser 3 framework.
+* **Open Source Challenge by GitHub:** The source code is publicly available in this repository.
+* **$NOODS Challenge by OP Games:** Embraces a chaotic, "vibe code" cooking theme with ingredients flying into woks, fitting the spirit of the challenge.
+
+## Getting Started
+
+This project uses [Bun](https://bun.sh/) as the package manager and runtime but should work with Node.
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/zvodd/phaser_3dnoodles.git cannon-ball-wok
+    ```
+2.  **Navigate into the directory:**
+    ```bash
+    cd cannon-ball-wok
+    ```
+3.  **Install dependencies:**
+    ```bash
+    bun install
+    ```
+4.  **Start the local development server (usually on port 8080):**
+    ```bash
+    bun run start
+    ```
+5.  **Build for production (outputs to `/dist`):**
+    ```bash
+    bun run build
+    ```
