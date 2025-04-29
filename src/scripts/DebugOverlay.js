@@ -155,7 +155,6 @@ export default class DebugOverlay {
         const allElements = [
             this.debugInfoText,
             placeholderButton1,
-            placeholderButton2,
             this.physicsDebugButton,
             sceneKeysLabel,
             ...sceneButtons
