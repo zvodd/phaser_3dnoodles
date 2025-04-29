@@ -1,9 +1,9 @@
 // src/MainScene.js
 import { Scene3D, ExtendedObject3D } from '@enable3d/phaser-extension';
 import { Vector3, MathUtils, PCFSoftShadowMap } from 'three';
-import CreateDebugButton from './DebugButton.js';
-import BillboardItemManager from './BillboardItemManager.js';
+import DebugOverlay from './DebugOverlay';
 import HelpOverlay from './HelpOverlay.js';
+import BillboardItemManager from './BillboardItemManager.js';
 import Cannon from './Cannon.js';
 import Platform from './Platform.js';
 import Player from './Player.js';
@@ -193,7 +193,6 @@ export default class MainScene extends Scene3D {
                 console.warn(`Could not register texture for type: ${type}. Invalid texture data.`);
             }
         });
-        //CreateDebugButton(this)
         console.log("Proceeding with scene creation...");
 
         // --- Setup Scene, Lights, Camera, Shadows... ---
@@ -209,7 +208,13 @@ export default class MainScene extends Scene3D {
         this.third.renderer.shadowMap.enabled = true;
         this.third.renderer.shadowMap.type = PCFSoftShadowMap;
 
+
+        // Example debug variable in your scene
+        this.someDebugVariable = 100;
+        this.time.addEvent({ delay: 1000, loop: true, callback: () => { this.someDebugVariable++; } }); // Example dynamic change
+
         // --- Instantiate UI Components ---
+        this.debugOverlay = new DebugOverlay(this);
         this.helpOverlay = new HelpOverlay(this);
 
         // --- Instantiate Score UI ---
