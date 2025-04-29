@@ -68,104 +68,6 @@ export default class MainScene extends Scene3D {
         this.assetLoadPromises = Promise.all([...modelPromises, ...texturePromises]);
     }
 
-    // --- Callback Handlers for RecipeUI ---
-    handleRecipeComplete(uiId) {
-        if (this.isGameOver) return; // Don't process if game over
-
-        console.log(`SCENE: Recipe Complete for ${uiId}!`);
-        if (this.scoreUI) {
-            this.scoreUI.incrementScore(100); // Example: Add 100 points per recipe
-        }
-        // TODO: Add success sound/animation
-    }
-
-    handleRecipeFailure(uiId, neededItem, receivedItem) {
-        if (this.isGameOver) return; // Don't process if game over
-
-        console.log(`SCENE: Recipe Failure for ${uiId}! Needed ${neededItem}, got ${receivedItem}`);
-        if (this.scoreUI) {
-            const gameOver = this.scoreUI.decrementLives(); // Decrement and check if game over
-            if (gameOver) {
-                this.handleGameOver("Wok Failure"); // Pass reason if desired
-            }
-        }
-        // TODO: Add failure sound/animation
-    }
-
-    // --- Player Death Handler ---
-    handlePlayerDeath(reason = "Fell off") {
-        if (this.isGameOver) return; // Already game over
-        console.log(`SCENE: Player died! Reason: ${reason}`);
-
-        if (this.scoreUI) {
-            const gameOver = this.scoreUI.decrementLives();
-            if (gameOver) {
-                this.handleGameOver(reason); // Trigger game over sequence
-            } else {
-                // Reset player position if not game over
-                if (this.playerComponent && typeof this.playerComponent.resetPosition === 'function') {
-                    // Reset to slightly above the center of the platform
-                    // Use platform's initial position as a base, or a default fallback
-                    const resetPosBase = this.platformComponent?.initialPosition || new Vector3(0, 5, 0);
-                    const resetPos = resetPosBase.clone().add(new Vector3(0, 2, 0)); // Add offset
-                    this.playerComponent.resetPosition(resetPos);
-
-                    console.log("Player position reset.");
-                    // TODO: Play respawn sound/effect
-                } else {
-                     console.error("Player component or resetPosition method not found!");
-                }
-            }
-        }
-    }
-
-
-    // --- Game Over Handler ---
-    handleGameOver(reason = "Unknown") {
-        if (this.isGameOver) return; // Prevent multiple calls
-
-        this.isGameOver = true;
-        this.isPlaying = false; // Stop gameplay logic
-        console.log(`GAME OVER! Reason: ${reason}`);
-
-        // Stop timers
-        if (this.cannonTimer) this.cannonTimer.remove();
-        if (this.itemSpawnTimer) this.itemSpawnTimer.remove();
-        console.log("Stopped game timers.");
-
-        // Display Game Over Text centered
-        const gameOverTextStyle = {
-            font: 'bold 48px Arial', // Slightly smaller font
-            fill: '#ff0000', // Red text
-            backgroundColor: 'rgba(0,0,0,0.8)', // Dark semi-transparent background
-            padding: { x: 20, y: 10 },
-            align: 'center' // Center align text if multiline
-        };
-        const centerX = this.scale.width / 2;
-        const centerY = this.scale.height / 2;
-        // Store reference to text object for cleanup
-        this.gameOverText = this.add.text(centerX, centerY,
-            `GAME OVER!\nFinal Score: ${this.scoreUI?.getScore() || 0}`,
-            gameOverTextStyle)
-            .setOrigin(0.5, 0.5) // Center text block
-            .setScrollFactor(0); // Keep fixed on screen
-
-        // Schedule scene restart after a delay
-        const restartDelay = 3000; // 3 seconds
-        console.log(`Scheduling restart in ${restartDelay / 1000} seconds...`);
-        // Store timer reference for cleanup
-        this.restartDelayTimer = this.time.delayedCall(restartDelay, () => {
-            console.log("Restarting scene now.");
-            // Clear the timer reference before restarting
-            this.restartDelayTimer = null;
-            //this.scene.start('PreloadScene')
-            //this.scene.restart(); // Restart the current scene
-        }, [], this);
-
-        // TODO: Add other game over logic (disable input etc.)
-    }
-
-
     async create() {
         console.log("Waiting for assets...");
         try {
@@ -310,6 +212,104 @@ export default class MainScene extends Scene3D {
         // --- Scene Shutdown Listener ---
         this.events.on('shutdown', this.shutdown, this);
     } // End of create()
+
+
+    // --- Callback Handlers for RecipeUI ---
+    handleRecipeComplete(uiId) {
+        if (this.isGameOver) return; // Don't process if game over
+
+        console.log(`SCENE: Recipe Complete for ${uiId}!`);
+        if (this.scoreUI) {
+            this.scoreUI.incrementScore(100); // Example: Add 100 points per recipe
+        }
+        // TODO: Add success sound/animation
+    }
+
+    handleRecipeFailure(uiId, neededItem, receivedItem) {
+        if (this.isGameOver) return; // Don't process if game over
+
+        console.log(`SCENE: Recipe Failure for ${uiId}! Needed ${neededItem}, got ${receivedItem}`);
+        if (this.scoreUI) {
+            const gameOver = this.scoreUI.decrementLives(); // Decrement and check if game over
+            if (gameOver) {
+                this.handleGameOver("Wok Failure"); // Pass reason if desired
+            }
+        }
+        // TODO: Add failure sound/animation
+    }
+
+    // --- Player Death Handler ---
+    handlePlayerDeath(reason = "Fell off") {
+        if (this.isGameOver) return; // Already game over
+        console.log(`SCENE: Player died! Reason: ${reason}`);
+
+        if (this.scoreUI) {
+            const gameOver = this.scoreUI.decrementLives();
+            if (gameOver) {
+                this.handleGameOver(reason); // Trigger game over sequence
+            } else {
+                // Reset player position if not game over
+                if (this.playerComponent && typeof this.playerComponent.resetPosition === 'function') {
+                    // Reset to slightly above the center of the platform
+                    // Use platform's initial position as a base, or a default fallback
+                    const resetPosBase = this.platformComponent?.initialPosition || new Vector3(0, 5, 0);
+                    const resetPos = resetPosBase.clone().add(new Vector3(0, 2, 0)); // Add offset
+                    this.playerComponent.resetPosition(resetPos);
+
+                    console.log("Player position reset.");
+                    // TODO: Play respawn sound/effect
+                } else {
+                     console.error("Player component or resetPosition method not found!");
+                }
+            }
+        }
+    }
+
+
+    // --- Game Over Handler ---
+    handleGameOver(reason = "Unknown") {
+        if (this.isGameOver) return; // Prevent multiple calls
+
+        this.isGameOver = true;
+        this.isPlaying = false; // Stop gameplay logic
+        console.log(`GAME OVER! Reason: ${reason}`);
+
+        // Stop timers
+        if (this.cannonTimer) this.cannonTimer.remove();
+        if (this.itemSpawnTimer) this.itemSpawnTimer.remove();
+        console.log("Stopped game timers.");
+
+        // Display Game Over Text centered
+        const gameOverTextStyle = {
+            font: 'bold 48px Arial', // Slightly smaller font
+            fill: '#ff0000', // Red text
+            backgroundColor: 'rgba(0,0,0,0.8)', // Dark semi-transparent background
+            padding: { x: 20, y: 10 },
+            align: 'center' // Center align text if multiline
+        };
+        const centerX = this.scale.width / 2;
+        const centerY = this.scale.height / 2;
+        // Store reference to text object for cleanup
+        this.gameOverText = this.add.text(centerX, centerY,
+            `GAME OVER!\nFinal Score: ${this.scoreUI?.getScore() || 0}`,
+            gameOverTextStyle)
+            .setOrigin(0.5, 0.5) // Center text block
+            .setScrollFactor(0); // Keep fixed on screen
+
+        // Schedule scene restart after a delay
+        const restartDelay = 3000; // 3 seconds
+        console.log(`Scheduling restart in ${restartDelay / 1000} seconds...`);
+        // Store timer reference for cleanup
+        this.restartDelayTimer = this.time.delayedCall(restartDelay, () => {
+            console.log("Restarting scene now.");
+            // Clear the timer reference before restarting
+            this.restartDelayTimer = null;
+            //this.scene.start('PreloadScene')
+            this.scene.restart(); // Restart the current scene
+        }, [], this);
+
+        // TODO: Add other game over logic (disable input etc.)
+    }
 
 
     scheduleNextCannonFire() {
